@@ -1,4 +1,4 @@
-# JagaPanen — Post-Harvest Decision Intelligence
+# JagaPanen
 
 Create a complete, single-page enterprise web application named "JagaPanen — Post-Harvest Decision Intelligence".
 
