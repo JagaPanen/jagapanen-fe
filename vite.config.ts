@@ -11,12 +11,34 @@ export default defineConfig({
     port: 3000,
     strictPort: true,
     host: true,
+    proxy: {
+      "/api": {
+        target: "https://jagapanen.avsatya.dev/api/v1",
+        changeOrigin: true,
+        rewrite: (path: string) => path.replace(/^\/api(?:\/v1)?/, ""),
+      },
+      "/health": {
+        target: "https://jagapanen.avsatya.dev",
+        changeOrigin: true,
+      },
+    },
   },
   vite: {
     server: {
       port: 3000,
       strictPort: true,
       host: true,
+      proxy: {
+        "/api": {
+          target: "https://jagapanen.avsatya.dev/api/v1",
+          changeOrigin: true,
+          rewrite: (path: string) => path.replace(/^\/api(?:\/v1)?/, ""),
+        },
+        "/health": {
+          target: "https://jagapanen.avsatya.dev",
+          changeOrigin: true,
+        },
+      },
     },
   },
   tanstackStart: {

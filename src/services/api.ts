@@ -1,5 +1,5 @@
 export const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string) || "https://jagapanen.avsatya.dev/api/v1";
+  (import.meta.env.VITE_API_BASE_URL as string) || "/api";
 
 export interface Commodity {
   id: string;
@@ -232,7 +232,9 @@ export const DEMO_FALLBACK_COMPARISON: ComparisonData = {
 };
 
 export async function checkHealth() {
-  const healthUrl = API_BASE_URL.replace(/\/api\/v1\/?$/, "") + "/health";
+  const healthUrl = API_BASE_URL.startsWith("http")
+    ? API_BASE_URL.replace(/\/api(?:\/v1)?\/?$/, "") + "/health"
+    : `${API_BASE_URL}/health`;
   const response = await fetch(healthUrl);
   if (!response.ok) {
     throw new Error("Backend offline");
