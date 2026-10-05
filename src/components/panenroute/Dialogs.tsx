@@ -93,18 +93,43 @@ const CLASS_LABELS: Record<Harvest["kelas"], string> = {
   D: "Tahan Lama",
 };
 
+const COMMODITY_PRESETS = [
+  { name: "Tomat", kelas: "A", shelf: 48, price: 15000 },
+  { name: "Bayam (Sayur Daun)", kelas: "A", shelf: 24, price: 12000 },
+  { name: "Stroberi", kelas: "A", shelf: 36, price: 60000 },
+  { name: "Cabai Rawit Merah", kelas: "B", shelf: 96, price: 45000 },
+  { name: "Paprika", kelas: "B", shelf: 120, price: 35000 },
+  { name: "Kubis", kelas: "C", shelf: 240, price: 8000 },
+  { name: "Pisang Ambon", kelas: "C", shelf: 168, price: 14000 },
+  { name: "Kentang Granola", kelas: "D", shelf: 720, price: 14000 },
+  { name: "Bawang Merah", kelas: "D", shelf: 480, price: 32000 },
+  { name: "Beras Medium", kelas: "E", shelf: 4320, price: 13500 },
+];
+
 export function AddHarvestDialog({ onAdd }: { onAdd: (h: Harvest) => void }) {
   const [open, setOpen] = useState(false);
-  const [komoditas, setKomoditas] = useState("");
+  const [komoditas, setKomoditas] = useState(COMMODITY_PRESETS[0].name);
   const [presetLocation, setPresetLocation] = useState(LOCATION_PRESETS[0] || "Titik A — Desa Sawangan");
   const [customLocationName, setCustomLocationName] = useState("");
   const [lat, setLat] = useState<number>(LOCATION_COORDINATES[LOCATION_PRESETS[0] || ""]?.[0] || DEFAULT_COORDINATE[0]);
   const [lng, setLng] = useState<number>(LOCATION_COORDINATES[LOCATION_PRESETS[0] || ""]?.[1] || DEFAULT_COORDINATE[1]);
-  const [volume, setVolume] = useState("");
-  const [jamSejakPanen, setJamSejakPanen] = useState("");
-  const [shelfLife, setShelfLife] = useState("48");
-  const [kelas, setKelas] = useState<Harvest["kelas"]>("A");
-  const [nilaiPerKg, setNilaiPerKg] = useState("15000");
+  const [volume, setVolume] = useState("300");
+  const [jamSejakPanen, setJamSejakPanen] = useState("6");
+  const [shelfLife, setShelfLife] = useState(String(COMMODITY_PRESETS[0].shelf));
+  const [kelas, setKelas] = useState<Harvest["kelas"]>(COMMODITY_PRESETS[0].kelas as Harvest["kelas"]);
+  const [nilaiPerKg, setNilaiPerKg] = useState(String(COMMODITY_PRESETS[0].price));
+  const [initialCondition, setInitialCondition] = useState("fresh");
+  const [destination, setDestination] = useState("Pasar Induk Caringin");
+
+  const handleCommoditySelect = (val: string) => {
+    setKomoditas(val);
+    const p = COMMODITY_PRESETS.find((c) => c.name === val);
+    if (p) {
+      setKelas(p.kelas as Harvest["kelas"]);
+      setShelfLife(String(p.shelf));
+      setNilaiPerKg(String(p.price));
+    }
+  };
 
   const handleLocationChange = (val: string) => {
     setPresetLocation(val);
@@ -130,7 +155,7 @@ export function AddHarvestDialog({ onAdd }: { onAdd: (h: Harvest) => void }) {
       jamSejakPanen: hours,
       shelfLife: shelf,
       kelas,
-      kelasLabel: CLASS_LABELS[kelas],
+      kelasLabel: CLASS_LABELS[kelas] || `Kelas ${kelas}`,
       nilaiPerKg: Number(nilaiPerKg) || 0,
       lat: Number(lat) || DEFAULT_COORDINATE[0],
       lng: Number(lng) || DEFAULT_COORDINATE[1],
@@ -139,11 +164,8 @@ export function AddHarvestDialog({ onAdd }: { onAdd: (h: Harvest) => void }) {
     onAdd(newHarvest);
     setOpen(false);
     // Reset form
-    setKomoditas("");
-    setVolume("");
-    setJamSejakPanen("");
-    setShelfLife("48");
-    setCustomLocationName("");
+    setVolume("300");
+    setJamSejakPanen("6");
   };
 
   return (
@@ -161,10 +183,38 @@ export function AddHarvestDialog({ onAdd }: { onAdd: (h: Harvest) => void }) {
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-2 gap-3">
-          <Field label="Komoditas" value={komoditas} onChange={setKomoditas} placeholder="Contoh: Tomat, Cabai" />
+          <div className="space-y-1.5">
+            <Label className="text-xs text-zinc-600">Pilihan Komoditas</Label>
+            <Select value={komoditas} onValueChange={handleCommoditySelect}>
+              <SelectTrigger className="border-slate-200 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {COMMODITY_PRESETS.map((c) => (
+                  <SelectItem key={c.name} value={c.name} className="text-xs">
+                    {c.name} (Kelas {c.kelas})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
           <div className="space-y-1.5">
-            <Label className="text-xs text-zinc-600">Lokasi Titik Panen</Label>
+            <Label className="text-xs text-zinc-600">Kondisi Awal Panen</Label>
+            <Select value={initialCondition} onValueChange={setInitialCondition}>
+              <SelectTrigger className="border-slate-200 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="fresh" className="text-xs">Segar Prima (Faktor 1.0)</SelectItem>
+                <SelectItem value="slightly_bruised" className="text-xs">Memar Ringan (Faktor 1.3)</SelectItem>
+                <SelectItem value="critical" className="text-xs">Kritis / Sangat Matang (Faktor 1.6)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="col-span-2 space-y-1.5">
+            <Label className="text-xs text-zinc-600">Lokasi Titik Panen (Penjemputan)</Label>
             <Select value={presetLocation} onValueChange={handleLocationChange}>
               <SelectTrigger className="border-slate-200 text-xs">
                 <SelectValue />
@@ -216,23 +266,21 @@ export function AddHarvestDialog({ onAdd }: { onAdd: (h: Harvest) => void }) {
             </div>
           )}
 
-          <Field label="Volume (kg)" type="number" value={volume} onChange={setVolume} placeholder="Misal: 300" />
-          <Field label="Jam Sejak Panen" type="number" value={jamSejakPanen} onChange={setJamSejakPanen} placeholder="Misal: 6" />
-          <Field label="Shelf Life (jam)" type="number" value={shelfLife} onChange={setShelfLife} placeholder="Misal: 48" />
-          <Field label="Nilai (Rp/kg)" type="number" value={nilaiPerKg} onChange={setNilaiPerKg} placeholder="Misal: 15000" />
+          <Field label="Volume Muatan (kg)" type="number" value={volume} onChange={setVolume} placeholder="Misal: 300" />
+          <Field label="Waktu Petik (Jam Sejak Panen)" type="number" value={jamSejakPanen} onChange={setJamSejakPanen} placeholder="Misal: 6" />
+          <Field label="Masa Simpan L_i (jam)" type="number" value={shelfLife} onChange={setShelfLife} placeholder="Misal: 48" />
+          <Field label="Estimasi Nilai (Rp/kg)" type="number" value={nilaiPerKg} onChange={setNilaiPerKg} placeholder="Misal: 15000" />
 
           <div className="col-span-2 space-y-1.5">
-            <Label className="text-xs text-zinc-600">Kelas Kerentanan</Label>
-            <Select value={kelas} onValueChange={(v) => setKelas(v as Harvest["kelas"])}>
+            <Label className="text-xs text-zinc-600">Tujuan Distribusi (Pasar / Gudang)</Label>
+            <Select value={destination} onValueChange={setDestination}>
               <SelectTrigger className="border-slate-200 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {Object.entries(CLASS_LABELS).map(([k, v]) => (
-                  <SelectItem key={k} value={k} className="text-xs">
-                    Kelas {k} — {v}
-                  </SelectItem>
-                ))}
+                <SelectItem value="Pasar Induk Caringin" className="text-xs">Pasar Induk Caringin (Bandung)</SelectItem>
+                <SelectItem value="Pasar Induk Giwangan" className="text-xs">Pasar Induk Giwangan (Yogyakarta)</SelectItem>
+                <SelectItem value="Gudang Sentra Koperasi" className="text-xs">Gudang Sentra Koperasi Tani</SelectItem>
               </SelectContent>
             </Select>
           </div>

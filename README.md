@@ -1,6 +1,6 @@
-# Crop Route Optimizer
+# JagaPanen — Post-Harvest Decision Intelligence
 
-Create a complete, single-page enterprise web application named "PanenRoute — Post-Harvest Decision Intelligence".
+Create a complete, single-page enterprise web application named "JagaPanen — Post-Harvest Decision Intelligence".
 
 This system is a decision-support platform designed for Agricultural Cooperatives (Koperasi Tani) to optimize fresh crop distribution by minimizing spoilage risk rather than merely finding the shortest route.
 
@@ -42,7 +42,7 @@ Hardcode this baseline demonstration dataset directly into React state:
 
 A. HEADER & KPI SUMMARY BAR
 
-- App title: "PanenRoute" with subtitle "Post-Harvest Logistics Orchestration".
+- App title: "JagaPanen" with subtitle "Post-Harvest Logistics Orchestration".
 
 - Badge: "Pilot: Koperasi Tani Maju Bersama".
 
@@ -104,7 +104,7 @@ Card 1: "Rute Konvensional (Shortest Path)"
 
 - Kerugian Ekonomi: -Rp 2.700.000
 
-Card 2: "Rekomendasi PanenRoute (Spoilage-Aware)"
+Card 2: "Rekomendasi JagaPanen (Spoilage-Aware)"
 
 - Status: Solusi Optimal Terpilih (Emerald Green Badge)
 

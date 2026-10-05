@@ -33,7 +33,7 @@ function poolIcon() {
   ">P</div>`;
   return L.divIcon({
     html,
-    className: "panenroute-pin-pool",
+    className: "jagapanen-pin-pool",
     iconSize: [34, 34],
     iconAnchor: [17, 17],
     popupAnchor: [0, -18],
@@ -50,7 +50,7 @@ function marketIcon() {
   ">M</div>`;
   return L.divIcon({
     html,
-    className: "panenroute-pin-market",
+    className: "jagapanen-pin-market",
     iconSize: [34, 34],
     iconAnchor: [17, 17],
     popupAnchor: [0, -18],
@@ -83,7 +83,7 @@ function harvestPinIcon(h: Harvest, order: number, mode: Mode) {
 
   return L.divIcon({
     html,
-    className: "panenroute-pin-harvest",
+    className: "jagapanen-pin-harvest",
     iconSize: [32, 32],
     iconAnchor: [16, 16],
     popupAnchor: [0, -18],

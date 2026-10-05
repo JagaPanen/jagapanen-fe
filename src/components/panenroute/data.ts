@@ -164,7 +164,7 @@ export const ROUTES = {
   },
   rekomendasi: {
     id: "rekomendasi",
-    title: "Rekomendasi PanenRoute (Spoilage-Aware)",
+    title: "Rekomendasi JagaPanen (Spoilage-Aware)",
     sequence: ["Pool", "Banyuroto (Tomat)", "Ngablak (Cabai)", "Grabag (Kentang)", "Pasar Induk"],
     jarak: "47.8 km",
     jarakNote: "+5.4 km deviasi rute",
