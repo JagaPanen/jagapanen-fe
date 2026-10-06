@@ -76,7 +76,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1.0" },
       { title: "JagaPanen" },
       { name: "description", content: "JagaPanen — Post-Harvest Logistics Orchestration and Decision Intelligence" },
       { name: "author", content: "JagaPanen" },
@@ -102,11 +102,11 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" className="w-full max-w-full overflow-x-hidden">
       <head>
         <HeadContent />
       </head>
-      <body>
+      <body className="min-h-screen min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-background text-foreground antialiased">
         {children}
         <Scripts />
       </body>

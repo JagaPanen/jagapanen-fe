@@ -133,12 +133,26 @@
 }
 
 @layer base {
-  * {
+  *, ::after, ::before {
     border-color: var(--color-border);
+    box-sizing: border-box;
+  }
+
+  html {
+    max-width: 100%;
+    overflow-x: hidden;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    max-width: 100%;
+    overflow-x: hidden;
+    min-height: 100vh;
+    min-height: 100dvh;
+    -webkit-overflow-scrolling: touch;
   }
 }
+

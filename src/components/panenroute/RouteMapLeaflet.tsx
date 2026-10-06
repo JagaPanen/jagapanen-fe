@@ -170,12 +170,12 @@ export function RouteMapLeaflet({
   }, [currentMode, costSequence, balancedSequence, spoilageSequence]);
 
   return (
-    <div className="relative">
+    <div className="relative w-full max-w-full">
       <MapContainer
         center={[-7.5, 110.35]}
         zoom={10}
         scrollWheelZoom
-        className="h-[420px] w-full rounded-b-lg"
+        className="h-[350px] sm:h-[450px] lg:h-[500px] w-full rounded-b-lg"
         style={{ zIndex: 0 }}
       >
         <TileLayer

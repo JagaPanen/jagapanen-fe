@@ -31,33 +31,35 @@ export function FormulaDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="border-slate-200 text-zinc-700">
-          <Info className="mr-1.5 h-4 w-4" /> Transparansi Formula
+        <Button variant="outline" size="sm" className="h-8 border-slate-200 text-xs text-zinc-700 whitespace-nowrap shrink-0">
+          <Info className="mr-1.5 h-3.5 w-3.5 text-zinc-500 shrink-0" />
+          <span className="hidden sm:inline">Transparansi Formula</span>
+          <span className="sm:hidden">Formula</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-2xl max-h-[85vh] p-4 sm:p-6 overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Transparansi Formula Perhitungan</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs">
             Seluruh keputusan bersifat deterministik — tanpa prediksi, tanpa machine learning.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 text-sm">
+        <div className="space-y-4 text-xs sm:text-sm">
           <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
               Spoilage Risk Score
             </p>
-            <code className="mt-1.5 block font-mono text-[13px] text-zinc-900">
+            <code className="mt-1.5 block font-mono text-[11px] sm:text-[13px] text-zinc-900 break-words overflow-x-auto">
               Spoilage Risk = min(100, ((t_harvest + t_transit) / ShelfLife) × 100 × k_handling)
             </code>
           </div>
 
           <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
-            <p className="text-xs font-semibold uppercase tracking-wide text-zinc-500">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
               Objective Function
             </p>
-            <code className="mt-1.5 block font-mono text-[13px] text-zinc-900">
+            <code className="mt-1.5 block font-mono text-[11px] sm:text-[13px] text-zinc-900 break-words overflow-x-auto">
               Total Cost = α(Travel Cost) + β(Detour Cost) + γ(Spoilage Risk)
             </code>
           </div>
@@ -72,11 +74,11 @@ export function FormulaDialog() {
               ["β (beta)", "Bobot biaya deviasi rute dari jalur terpendek."],
               ["γ (gamma)", "Bobot risiko susut panen — semakin tinggi, semakin diprioritaskan komoditas rentan."],
             ].map(([k, v]) => (
-              <div key={k} className="flex gap-3 border-b border-slate-100 pb-2 last:border-0">
-                <span className="w-28 shrink-0 font-mono text-[12px] font-semibold text-emerald-700">
+              <div key={k} className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3 border-b border-slate-100 pb-2 last:border-0">
+                <span className="w-28 shrink-0 font-mono text-[11px] sm:text-[12px] font-semibold text-emerald-700">
                   {k}
                 </span>
-                <span className="text-[13px] text-zinc-600">{v}</span>
+                <span className="text-xs sm:text-[13px] text-zinc-600 break-words">{v}</span>
               </div>
             ))}
           </div>
@@ -171,18 +173,20 @@ export function AddHarvestDialog({ onAdd }: { onAdd: (h: Harvest) => void }) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="bg-emerald-600 text-white hover:bg-emerald-700">
-          <Plus className="mr-1.5 h-4 w-4" /> Tambah Data Panen
+        <Button size="sm" className="h-8 bg-emerald-600 text-white hover:bg-emerald-700 whitespace-nowrap shrink-0">
+          <Plus className="mr-1.5 h-3.5 w-3.5 shrink-0" />
+          <span className="hidden sm:inline">Tambah Data Panen</span>
+          <span className="sm:hidden">Tambah Panen</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-lg max-h-[90vh] p-4 sm:p-6 overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Tambah Data Panen Aktual</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs">
             Hanya hasil panen yang sudah siap kirim. Titik lokasi akan langsung disinkronkan ke peta.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs text-zinc-600">Pilihan Komoditas</Label>
             <Select value={komoditas} onValueChange={handleCommoditySelect}>
@@ -213,7 +217,7 @@ export function AddHarvestDialog({ onAdd }: { onAdd: (h: Harvest) => void }) {
             </Select>
           </div>
 
-          <div className="col-span-2 space-y-1.5">
+          <div className="col-span-1 sm:col-span-2 space-y-1.5">
             <Label className="text-xs text-zinc-600">Lokasi Titik Panen (Penjemputan)</Label>
             <Select value={presetLocation} onValueChange={handleLocationChange}>
               <SelectTrigger className="border-slate-200 text-xs">
@@ -234,7 +238,7 @@ export function AddHarvestDialog({ onAdd }: { onAdd: (h: Harvest) => void }) {
 
           {presetLocation === "custom" ? (
             <>
-              <div className="col-span-2">
+              <div className="col-span-1 sm:col-span-2">
                 <Field
                   label="Nama Lokasi Kustom"
                   value={customLocationName}
@@ -258,9 +262,9 @@ export function AddHarvestDialog({ onAdd }: { onAdd: (h: Harvest) => void }) {
               />
             </>
           ) : (
-            <div className="col-span-2 rounded border border-slate-100 bg-slate-50 px-3 py-1.5 text-[11px] text-zinc-600 flex items-center gap-1.5">
+            <div className="col-span-1 sm:col-span-2 rounded border border-slate-100 bg-slate-50 px-3 py-1.5 text-[11px] text-zinc-600 flex items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-              <span>
+              <span className="truncate">
                 Koordinat Terpetakan: <code className="font-mono font-semibold">{lat}, {lng}</code>
               </span>
             </div>
@@ -271,7 +275,7 @@ export function AddHarvestDialog({ onAdd }: { onAdd: (h: Harvest) => void }) {
           <Field label="Masa Simpan L_i (jam)" type="number" value={shelfLife} onChange={setShelfLife} placeholder="Misal: 48" />
           <Field label="Estimasi Nilai (Rp/kg)" type="number" value={nilaiPerKg} onChange={setNilaiPerKg} placeholder="Misal: 15000" />
 
-          <div className="col-span-2 space-y-1.5">
+          <div className="col-span-1 sm:col-span-2 space-y-1.5">
             <Label className="text-xs text-zinc-600">Tujuan Distribusi (Pasar / Gudang)</Label>
             <Select value={destination} onValueChange={setDestination}>
               <SelectTrigger className="border-slate-200 text-xs">
@@ -376,14 +380,14 @@ export function EditHarvestDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-lg max-h-[90vh] p-4 sm:p-6 overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Data Panen ({harvest.id})</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs">
             Perbarui data komoditas atau ganti lokasi titik jemput panen. Peta akan otomatis menyesuaikan rute.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Komoditas" value={komoditas} onChange={setKomoditas} />
 
           <div className="space-y-1.5">
@@ -407,7 +411,7 @@ export function EditHarvestDialog({
 
           {presetLocation === "custom" ? (
             <>
-              <div className="col-span-2">
+              <div className="col-span-1 sm:col-span-2">
                 <Field
                   label="Nama Lokasi Kustom"
                   value={customLocationName}
@@ -428,9 +432,9 @@ export function EditHarvestDialog({
               />
             </>
           ) : (
-            <div className="col-span-2 rounded border border-slate-100 bg-slate-50 px-3 py-1.5 text-[11px] text-zinc-600 flex items-center gap-1.5">
+            <div className="col-span-1 sm:col-span-2 rounded border border-slate-100 bg-slate-50 px-3 py-1.5 text-[11px] text-zinc-600 flex items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-              <span>
+              <span className="truncate">
                 Koordinat Terpetakan: <code className="font-mono font-semibold">{lat}, {lng}</code>
               </span>
             </div>
@@ -441,7 +445,7 @@ export function EditHarvestDialog({
           <Field label="Shelf Life (jam)" type="number" value={shelfLife} onChange={setShelfLife} />
           <Field label="Nilai (Rp/kg)" type="number" value={nilaiPerKg} onChange={setNilaiPerKg} />
 
-          <div className="col-span-2 space-y-1.5">
+          <div className="col-span-1 sm:col-span-2 space-y-1.5">
             <Label className="text-xs text-zinc-600">Kelas Kerentanan</Label>
             <Select value={kelas} onValueChange={(v) => setKelas(v as Harvest["kelas"])}>
               <SelectTrigger className="border-slate-200 text-xs">

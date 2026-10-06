@@ -115,11 +115,11 @@ function Index() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-zinc-900">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3 px-5 py-3">
+    <div className="min-h-screen min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-slate-50 text-zinc-900 flex flex-col">
+      <header className="w-full border-b border-slate-200 bg-white">
+        <div className="mx-auto flex w-full max-w-[1600px] flex-col sm:flex-row sm:items-center justify-between gap-3 px-3.5 sm:px-5 py-3">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-md bg-emerald-600">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-600">
               <Leaf className="h-5 w-5 text-white" />
             </div>
             <div>
@@ -127,25 +127,25 @@ function Index() {
               <p className="text-[11px] text-zinc-500">Post-Harvest Logistics Orchestration</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="border-slate-200 text-[11px] text-zinc-600">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+            <Badge variant="outline" className="border-slate-200 text-[10px] sm:text-[11px] text-zinc-600">
               Pilot: Koperasi Tani Maju Bersama
             </Badge>
             <Badge
               variant="outline"
               className={
                 isBackendConnected
-                  ? "border-emerald-200 bg-emerald-50 text-[11px] text-emerald-700"
-                  : "border-amber-200 bg-amber-50 text-[11px] text-amber-700"
+                  ? "border-emerald-200 bg-emerald-50 text-[10px] sm:text-[11px] text-emerald-700"
+                  : "border-amber-200 bg-amber-50 text-[10px] sm:text-[11px] text-amber-700"
               }
             >
               {isBackendConnected ? (
                 <>
-                  <ShieldCheck className="mr-1 h-3 w-3" /> Backend Active (Neon DB)
+                  <ShieldCheck className="mr-1 h-3 w-3 shrink-0" /> Backend Active (Neon DB)
                 </>
               ) : (
                 <>
-                  <Database className="mr-1 h-3 w-3" /> Standalone Demo (Safety Fallback)
+                  <Database className="mr-1 h-3 w-3 shrink-0" /> Standalone Demo (Safety Fallback)
                 </>
               )}
             </Badge>
@@ -154,25 +154,29 @@ function Index() {
       </header>
 
       {/* Mode & Switcher Bar */}
-      <div className="sticky top-0 z-10 border-b border-slate-200 bg-white/95 backdrop-blur px-5 py-2.5">
-        <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <div className="flex rounded-md border border-slate-200 bg-slate-50 p-0.5">
+      <div className="sticky top-0 z-10 w-full border-b border-slate-200 bg-white/95 backdrop-blur px-3 sm:px-5 py-2 sm:py-2.5">
+        <div className="mx-auto flex w-full max-w-[1600px] flex-col lg:flex-row lg:items-center justify-between gap-2.5">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
+            <div className="flex rounded-md border border-slate-200 bg-slate-50 p-0.5 w-full sm:w-auto">
               <button
                 onClick={() => setActiveTab("comparison")}
-                className={`rounded px-3 py-1.5 text-xs font-semibold flex items-center gap-1 ${
-                  activeTab === "comparison" ? "bg-white text-zinc-900 shadow-xs" : "text-zinc-500"
+                className={`flex-1 sm:flex-none justify-center rounded px-2.5 sm:px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                  activeTab === "comparison" ? "bg-white text-zinc-900 shadow-xs" : "text-zinc-500 hover:text-zinc-800"
                 }`}
               >
-                <Layers className="h-3 w-3" /> Komparasi Skenario (Demo Utama)
+                <Layers className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Komparasi Skenario (Demo Utama)</span>
+                <span className="sm:hidden">Komparasi</span>
               </button>
               <button
                 onClick={() => setActiveTab("map")}
-                className={`rounded px-3 py-1.5 text-xs font-semibold flex items-center gap-1 ${
-                  activeTab === "map" ? "bg-white text-zinc-900 shadow-xs" : "text-zinc-500"
+                className={`flex-1 sm:flex-none justify-center rounded px-2.5 sm:px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                  activeTab === "map" ? "bg-white text-zinc-900 shadow-xs" : "text-zinc-500 hover:text-zinc-800"
                 }`}
               >
-                <RefreshCw className="h-3 w-3" /> Peta Penjemputan
+                <RefreshCw className="h-3.5 w-3.5 shrink-0" />
+                <span className="hidden sm:inline">Peta Penjemputan</span>
+                <span className="sm:hidden">Peta Armada</span>
               </button>
             </div>
 
@@ -180,14 +184,14 @@ function Index() {
               size="sm"
               onClick={handleRunOptimization}
               disabled={isCalculating || isOverload}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8 shrink-0 justify-center shadow-xs"
             >
-              <Play className="mr-1 h-3 w-3" />
+              <Play className="mr-1.5 h-3.5 w-3.5 shrink-0" />
               {isCalculating ? "Menghitung Rute..." : "Kalkulasi Ulang Rute"}
             </Button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 w-full lg:w-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             <CommodityAdminDialog />
             <TestReportDialog />
             <FormulaDialog />
@@ -196,9 +200,9 @@ function Index() {
         </div>
       </div>
 
-      <main className="mx-auto max-w-[1600px] space-y-4 px-5 py-4">
+      <main className="mx-auto w-full max-w-[1600px] flex-1 space-y-4 px-3 sm:px-5 py-3 sm:py-4">
         {isOverload && (
-          <div className="p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs rounded-lg">
+          <div className="w-full p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs rounded-lg">
             ⚠️ <strong>Kapasitas Armada Terlampaui ({totalVolume} kg / {VEHICLE.kapasitas} kg).</strong> Hapus salah satu
             baris panen di tabel agar kapasitas kembali aman.
           </div>
@@ -208,7 +212,7 @@ function Index() {
         {activeTab === "comparison" ? (
           <ComparisonView data={comparisonData} />
         ) : (
-          <div className="border border-slate-200 rounded-lg overflow-hidden bg-white">
+          <div className="w-full border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
             <RouteMap harvests={harvests} mode={mode} />
           </div>
         )}

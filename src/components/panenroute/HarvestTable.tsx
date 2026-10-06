@@ -36,21 +36,24 @@ export function HarvestTable({
   );
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white">
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 px-4 py-2.5">
-        <h2 className="text-sm font-semibold text-zinc-900">Data Panen Aktual</h2>
-        <div className="flex items-center gap-2">
-          <div className="relative">
+    <div className="w-full max-w-full rounded-lg border border-slate-200 bg-white shadow-xs overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-200 px-3.5 sm:px-4 py-2.5">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-zinc-900">Data Panen Aktual</h2>
+          <span className="sm:hidden text-[11px] text-zinc-500">{rows.length} item</span>
+        </div>
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
+          <div className="relative flex-1 sm:w-56">
             <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
               placeholder="Cari komoditas / lokasi"
-              className="h-8 w-56 border-slate-200 pl-8 text-xs"
+              className="h-8 w-full border-slate-200 pl-8 text-xs"
             />
           </div>
           <Select value={kelas} onValueChange={setKelas}>
-            <SelectTrigger className="h-8 w-40 border-slate-200 text-xs">
+            <SelectTrigger className="h-8 w-full sm:w-36 border-slate-200 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -64,8 +67,8 @@ export function HarvestTable({
         </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-[12px]">
+      <div className="w-full overflow-x-auto [scrollbar-width:thin]">
+        <table className="w-full min-w-[760px] text-left text-[12px]">
           <thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-zinc-500">
             <tr>
               {[

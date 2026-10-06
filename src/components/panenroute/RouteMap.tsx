@@ -18,10 +18,10 @@ export function RouteMap({
   const currentMode: Mode = mode || (highlight === "konvensional" ? "cost" : "spoilage");
 
   return (
-    <div className="relative rounded-lg border border-slate-200 bg-white">
-      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-2.5">
+    <div className="relative w-full max-w-full rounded-lg border border-slate-200 bg-white overflow-hidden shadow-xs">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 px-3.5 sm:px-4 py-2.5">
         <h2 className="text-sm font-semibold text-zinc-900">Peta Jaringan Rute</h2>
-        <div className="flex items-center gap-3 text-[11px] text-zinc-600">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-[11px] text-zinc-600">
           <span
             className={
               "flex items-center gap-1.5 transition-all duration-200 " +
@@ -51,14 +51,14 @@ export function RouteMap({
 
       <ClientOnly
         fallback={
-          <div className="flex h-[420px] w-full items-center justify-center text-xs text-zinc-400">
+          <div className="flex h-[350px] sm:h-[450px] lg:h-[500px] w-full items-center justify-center text-xs text-zinc-400">
             Memuat peta…
           </div>
         }
       >
         <Suspense
           fallback={
-            <div className="flex h-[420px] w-full items-center justify-center text-xs text-zinc-400">
+            <div className="flex h-[350px] sm:h-[450px] lg:h-[500px] w-full items-center justify-center text-xs text-zinc-400">
               Memuat peta…
             </div>
           }

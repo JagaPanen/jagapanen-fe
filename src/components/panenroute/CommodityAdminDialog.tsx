@@ -40,13 +40,15 @@ export function CommodityAdminDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="border-slate-200 text-xs text-zinc-700">
-          <BookOpen className="mr-1.5 h-3.5 w-3.5 text-emerald-600" /> Database Parameter Komoditas
+        <Button variant="outline" size="sm" className="h-8 border-slate-200 text-xs text-zinc-700 whitespace-nowrap shrink-0">
+          <BookOpen className="mr-1.5 h-3.5 w-3.5 text-emerald-600 shrink-0" />
+          <span className="hidden sm:inline">Database Parameter Komoditas</span>
+          <span className="sm:hidden">Parameter Komoditas</span>
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="w-[calc(100vw-1.5rem)] sm:w-full max-w-4xl max-h-[85vh] p-4 sm:p-6 overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex flex-wrap items-center gap-2">
             <span>Katalog Parameter Kerentanan Pangan & Rujukan Ilmiah</span>
             <Badge variant="outline" className="text-[10px] text-zinc-500 font-normal">
               SOW Task 2
@@ -61,8 +63,8 @@ export function CommodityAdminDialog() {
           </DialogDescription>
         </DialogHeader>
 
-        <div className="mt-3 overflow-x-auto border border-slate-200 rounded-lg">
-          <table className="w-full text-left text-xs">
+        <div className="mt-3 w-full overflow-x-auto border border-slate-200 rounded-lg [scrollbar-width:thin]">
+          <table className="w-full min-w-[650px] text-left text-xs">
             <thead className="bg-slate-50 text-[11px] font-semibold uppercase text-zinc-500 border-b border-slate-200">
               <tr>
                 <th className="p-2.5">Komoditas & Grup</th>
