@@ -62,6 +62,7 @@ export function HarvestTable({
               <SelectItem value="B">Kelas B</SelectItem>
               <SelectItem value="C">Kelas C</SelectItem>
               <SelectItem value="D">Kelas D</SelectItem>
+              <SelectItem value="E">Kelas E</SelectItem>
             </SelectContent>
           </Select>
         </div>

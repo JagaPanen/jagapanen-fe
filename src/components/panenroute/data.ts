@@ -5,7 +5,7 @@ export type Harvest = {
   volume: number;
   jamSejakPanen: number;
   shelfLife: number;
-  kelas: "A" | "B" | "C" | "D";
+  kelas: "A" | "B" | "C" | "D" | "E";
   kelasLabel: string;
   nilaiPerKg: number;
   lat: number;
@@ -105,6 +105,7 @@ export const K_HANDLING: Record<Harvest["kelas"], number> = {
   B: 1.3,
   C: 1.1,
   D: 1.0,
+  E: 0.9,
 };
 
 export function urgencyScore(h: Harvest, transitHours = 2.4) {

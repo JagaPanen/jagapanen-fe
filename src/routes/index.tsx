@@ -87,7 +87,8 @@ function Index() {
             location: { lat: h.lat, lng: h.lng, name: h.lokasi },
             harvest_timestamp: new Date(Date.now() - h.jamSejakPanen * 3600 * 1000).toISOString(),
             initial_condition: "fresh",
-            handling_factor: h.kelas === "A" ? 1.6 : h.kelas === "B" ? 1.3 : 1.0,
+            handling_factor:
+              h.kelas === "A" ? 1.6 : h.kelas === "B" ? 1.3 : h.kelas === "C" ? 1.1 : h.kelas === "D" ? 1.0 : 0.9,
           })),
           vehicles: [
             {

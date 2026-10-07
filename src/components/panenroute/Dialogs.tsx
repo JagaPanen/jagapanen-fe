@@ -93,6 +93,7 @@ const CLASS_LABELS: Record<Harvest["kelas"], string> = {
   B: "Mudah Rusak",
   C: "Cukup Tahan",
   D: "Tahan Lama",
+  E: "Pangan Pokok (Tahan Lama)",
 };
 
 const COMMODITY_PRESETS = [
