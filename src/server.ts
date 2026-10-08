@@ -18,8 +18,8 @@ async function getServerEntry(): Promise<ServerEntry> {
   return serverEntryPromise;
 }
 
-const REMOTE_API_BASE = "https://jagapanen.avsatya.dev/api/v1";
-const REMOTE_ORIGIN = "https://jagapanen.avsatya.dev";
+const REMOTE_API_BASE = "https://services.panenlink.id/api/v1";
+const REMOTE_ORIGIN = "https://services.panenlink.id";
 
 // Proxy handler untuk meneruskan /api/** ke server VPS backend Jagapanen
 async function handleApiProxy(request: Request, url: URL): Promise<Response> {
@@ -68,7 +68,7 @@ async function handleApiProxy(request: Request, url: URL): Promise<Response> {
       forwardedHeaders.set(key, value);
     }
   }
-  forwardedHeaders.set("host", "jagapanen.avsatya.dev");
+  forwardedHeaders.set("host", "services.panenlink.id");
 
   // 4. Tangani body untuk metode non-GET/HEAD
   const hasBody = !["GET", "HEAD"].includes(request.method.toUpperCase());

@@ -13,12 +13,12 @@ export default defineConfig({
     host: true,
     proxy: {
       "/api": {
-        target: "https://jagapanen.avsatya.dev/api/v1",
+        target: "https://services.panenlink.id/api/v1",
         changeOrigin: true,
         rewrite: (path: string) => path.replace(/^\/api(?:\/v1)?/, ""),
       },
       "/health": {
-        target: "https://jagapanen.avsatya.dev",
+        target: "https://services.panenlink.id",
         changeOrigin: true,
       },
     },
@@ -30,12 +30,12 @@ export default defineConfig({
       host: true,
       proxy: {
         "/api": {
-          target: "https://jagapanen.avsatya.dev/api/v1",
+          target: "https://services.panenlink.id/api/v1",
           changeOrigin: true,
           rewrite: (path: string) => path.replace(/^\/api(?:\/v1)?/, ""),
         },
         "/health": {
-          target: "https://jagapanen.avsatya.dev",
+          target: "https://services.panenlink.id",
           changeOrigin: true,
         },
       },
