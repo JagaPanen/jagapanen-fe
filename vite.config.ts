@@ -12,6 +12,11 @@ export default defineConfig({
     strictPort: true,
     host: true,
     proxy: {
+      "/api/health": {
+        target: "https://services.panenlink.id",
+        changeOrigin: true,
+        rewrite: () => "/health",
+      },
       "/api": {
         target: "https://services.panenlink.id/api/v1",
         changeOrigin: true,
@@ -29,6 +34,11 @@ export default defineConfig({
       strictPort: true,
       host: true,
       proxy: {
+        "/api/health": {
+          target: "https://services.panenlink.id",
+          changeOrigin: true,
+          rewrite: () => "/health",
+        },
         "/api": {
           target: "https://services.panenlink.id/api/v1",
           changeOrigin: true,
