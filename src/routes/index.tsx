@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Leaf, ShieldCheck, Database, RefreshCw, Layers, Play } from "lucide-react";
+import { ShieldCheck, Database, RefreshCw, Layers, Play } from "lucide-react";
 import { RouteMap } from "@/components/panenroute/RouteMap";
 import { HarvestTable } from "@/components/panenroute/HarvestTable";
 import { FormulaDialog, AddHarvestDialog } from "@/components/panenroute/Dialogs";
@@ -120,13 +120,11 @@ function Index() {
       <header className="w-full border-b border-slate-200 bg-white">
         <div className="mx-auto flex w-full max-w-[1600px] flex-col sm:flex-row sm:items-center justify-between gap-3 px-3.5 sm:px-5 py-3">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-600">
-              <Leaf className="h-5 w-5 text-white" />
-            </div>
-            <div>
-              <h1 className="text-[15px] font-bold leading-tight">JagaPanen</h1>
-              <p className="text-[11px] text-zinc-500">Post-Harvest Logistics Orchestration</p>
-            </div>
+            <img
+              src="/logo.png"
+              alt="JagaPanen - Spoilage-Aware Agri-Logistics"
+              className="h-10 sm:h-12 w-auto object-contain flex-shrink-0"
+            />
           </div>
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <Badge variant="outline" className="border-slate-200 text-[10px] sm:text-[11px] text-zinc-600">
