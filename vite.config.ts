@@ -55,5 +55,12 @@ export default defineConfig({
     // Redirect TanStack Start's bundled server entry to src/server.ts (our SSR error wrapper).
     // nitro/vite builds from this
     server: { entry: "server" },
+    // Write static HTML into dist/client at build time (index.html for "/").
+    prerender: {
+      enabled: true,
+      autoStaticPathsDiscovery: true,
+      crawlLinks: true,
+    },
+    pages: [{ path: "/" }],
   },
 } as any);
