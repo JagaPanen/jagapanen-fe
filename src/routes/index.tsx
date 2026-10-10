@@ -161,15 +161,15 @@ function Index() {
             />
           </div>
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-            <Badge variant="outline" className="border-slate-200 text-[10px] sm:text-[11px] text-zinc-600">
+            <Badge variant="outline" className="border-slate-200 rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-medium text-slate-600 bg-slate-50/50">
               Pilot: Koperasi Tani Maju Bersama
             </Badge>
             <Badge
               variant="outline"
               className={
                 isBackendConnected
-                  ? "border-emerald-200 bg-emerald-50 text-[10px] sm:text-[11px] text-emerald-700"
-                  : "border-amber-200 bg-amber-50 text-[10px] sm:text-[11px] text-amber-700"
+                  ? "border-emerald-200 bg-emerald-50 rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-medium text-emerald-700"
+                  : "border-amber-200 bg-amber-50 rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-medium text-amber-700"
               }
             >
               {isBackendConnected ? (
@@ -190,10 +190,10 @@ function Index() {
       <div className="sticky top-0 z-10 w-full border-b border-slate-200 bg-white/95 backdrop-blur px-3 sm:px-5 py-2 sm:py-2.5">
         <div className="mx-auto flex w-full max-w-[1600px] flex-col lg:flex-row lg:items-center justify-between gap-2.5">
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
-            <div className="flex rounded-md border border-slate-200 bg-slate-50 p-0.5 w-full sm:w-auto">
+            <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 w-full sm:w-auto">
               <button
                 onClick={() => setActiveTab("comparison")}
-                className={`flex-1 sm:flex-none justify-center rounded px-2.5 sm:px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                className={`flex-1 sm:flex-none justify-center rounded-md px-2.5 sm:px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
                   activeTab === "comparison" ? "bg-white text-zinc-900 shadow-xs" : "text-zinc-500 hover:text-zinc-800"
                 }`}
               >
@@ -203,7 +203,7 @@ function Index() {
               </button>
               <button
                 onClick={() => setActiveTab("map")}
-                className={`flex-1 sm:flex-none justify-center rounded px-2.5 sm:px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                className={`flex-1 sm:flex-none justify-center rounded-md px-2.5 sm:px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
                   activeTab === "map" ? "bg-white text-zinc-900 shadow-xs" : "text-zinc-500 hover:text-zinc-800"
                 }`}
               >
@@ -217,7 +217,7 @@ function Index() {
               size="sm"
               onClick={handleRunOptimization}
               disabled={isCalculating || isHarvestsLoading || isOverload || harvests.length === 0}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8 shrink-0 justify-center shadow-xs"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8 shrink-0 justify-center rounded-lg shadow-sm"
             >
               <Play className="mr-1.5 h-3.5 w-3.5 shrink-0" />
               {isCalculating
@@ -244,7 +244,7 @@ function Index() {
 
       <main className="mx-auto w-full max-w-[1600px] flex-1 space-y-4 px-3 sm:px-5 py-3 sm:py-4">
         {isOverload && (
-          <div className="w-full p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs rounded-lg">
+          <div className="w-full p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs rounded-xl shadow-sm">
             ⚠️ <strong>Kapasitas Armada Terlampaui ({totalVolume} kg / {VEHICLE.kapasitas} kg).</strong> Hapus salah satu
             baris panen di tabel agar kapasitas kembali aman.
           </div>

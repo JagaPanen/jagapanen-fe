@@ -38,7 +38,7 @@ export function HarvestTable({
   );
 
   return (
-    <div className="w-full max-w-full rounded-lg border border-slate-200 bg-white shadow-xs overflow-hidden">
+    <div className="w-full max-w-full rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-200 px-3.5 sm:px-4 py-2.5">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-zinc-900">Data Panen Aktual</h2>

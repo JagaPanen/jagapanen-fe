@@ -21,12 +21,12 @@ export function ComparisonView({
     <div className="space-y-4 w-full max-w-full">
       {/* Task 5: Impact Calculator Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
-        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg min-w-0">
-          <div className="flex items-center gap-1.5 text-emerald-800 text-[11px] font-semibold uppercase">
-            <TrendingUp className="h-4 w-4 shrink-0" /> <span className="truncate">Food Loss Avoided</span>
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl shadow-sm min-w-0">
+          <div className="flex items-center gap-1.5 text-emerald-800 text-xs font-bold uppercase tracking-wider">
+            <TrendingUp className="h-4 w-4 shrink-0 text-emerald-600" /> <span className="truncate">Food Loss Avoided</span>
           </div>
           {showSkeleton ? (
-            <div className="animate-pulse bg-slate-200 h-8 w-28 rounded my-1" />
+            <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-8 rounded w-3/4 my-1.5" />
           ) : (
             <div className="text-lg sm:text-xl font-bold text-emerald-700 mt-1 truncate">
               +{jagaPanen?.food_loss_avoided_kg ?? 0} kg
@@ -35,12 +35,12 @@ export function ComparisonView({
           <div className="text-[10px] text-emerald-600 truncate">Estimasi muatan terselamatkan</div>
         </div>
 
-        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg min-w-0">
-          <div className="flex items-center gap-1.5 text-emerald-800 text-[11px] font-semibold uppercase">
-            <DollarSign className="h-4 w-4 shrink-0" /> <span className="truncate">Economic Loss Avoided</span>
+        <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl shadow-sm min-w-0">
+          <div className="flex items-center gap-1.5 text-emerald-800 text-xs font-bold uppercase tracking-wider">
+            <DollarSign className="h-4 w-4 shrink-0 text-emerald-600" /> <span className="truncate">Economic Loss Avoided</span>
           </div>
           {showSkeleton ? (
-            <div className="animate-pulse bg-slate-200 h-8 w-36 rounded my-1" />
+            <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-8 rounded w-3/4 my-1.5" />
           ) : (
             <div
               className="text-lg sm:text-xl font-bold text-emerald-700 mt-1 truncate"
@@ -52,29 +52,29 @@ export function ComparisonView({
           <div className="text-[10px] text-emerald-600 truncate">Nilai komoditas aman</div>
         </div>
 
-        <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg min-w-0">
-          <div className="flex items-center gap-1.5 text-zinc-600 text-[11px] font-semibold uppercase">
-            <Navigation className="h-4 w-4 shrink-0" /> <span className="truncate">Biaya BBM Tambahan</span>
+        <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl shadow-sm min-w-0">
+          <div className="flex items-center gap-1.5 text-slate-600 text-xs font-bold uppercase tracking-wider">
+            <Navigation className="h-4 w-4 shrink-0 text-slate-500" /> <span className="truncate">Biaya BBM Tambahan</span>
           </div>
           {showSkeleton ? (
-            <div className="animate-pulse bg-slate-200 h-8 w-28 rounded my-1" />
+            <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-8 rounded w-3/4 my-1.5" />
           ) : (
             <div
-              className="text-lg sm:text-xl font-bold text-zinc-800 mt-1 truncate"
+              className="text-lg sm:text-xl font-bold text-slate-800 mt-1 truncate"
               title={formatRp(jagaPanen?.additional_logistics_cost_idr ?? 0)}
             >
               +{formatRp(jagaPanen?.additional_logistics_cost_idr ?? 0)}
             </div>
           )}
-          <div className="text-[10px] text-zinc-500 truncate">Konsekuensi rute detour</div>
+          <div className="text-[10px] text-slate-500 truncate">Konsekuensi rute detour</div>
         </div>
 
-        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg min-w-0">
-          <div className="flex items-center gap-1.5 text-blue-800 text-[11px] font-semibold uppercase">
-            <TrendingUp className="h-4 w-4 shrink-0" /> <span className="truncate">Net Retained Margin</span>
+        <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl shadow-sm min-w-0">
+          <div className="flex items-center gap-1.5 text-blue-800 text-xs font-bold uppercase tracking-wider">
+            <TrendingUp className="h-4 w-4 shrink-0 text-blue-600" /> <span className="truncate">Net Retained Margin</span>
           </div>
           {showSkeleton ? (
-            <div className="animate-pulse bg-slate-200 h-8 w-36 rounded my-1" />
+            <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-8 rounded w-3/4 my-1.5" />
           ) : (
             <div
               className="text-lg sm:text-xl font-bold text-blue-700 mt-1 truncate"
@@ -90,7 +90,7 @@ export function ComparisonView({
       {/* Task 3: Side-by-Side Main Comparison */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 w-full">
         {/* Kolom Kiri: Baseline */}
-        <div className="border border-slate-200 bg-white rounded-lg p-3.5 sm:p-4 shadow-xs min-w-0">
+        <div className="border border-slate-200 bg-white rounded-xl p-3.5 sm:p-4 shadow-sm min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100">
             <div>
               <h3 className="text-sm font-bold text-zinc-800">Rute Konvensional (Baseline)</h3>
@@ -197,7 +197,7 @@ export function ComparisonView({
         </div>
 
         {/* Kolom Kanan: JagaPanen */}
-        <div className="border border-emerald-300 bg-white rounded-lg p-3.5 sm:p-4 shadow-xs ring-1 ring-emerald-500/10 min-w-0">
+        <div className="border border-emerald-300 bg-white rounded-xl p-3.5 sm:p-4 shadow-sm ring-1 ring-emerald-500/10 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-emerald-100">
             <div>
               <h3 className="text-sm font-bold text-emerald-950">Rute JagaPanen (Spoilage-Aware)</h3>
