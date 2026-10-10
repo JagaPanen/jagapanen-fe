@@ -262,6 +262,145 @@ export async function getVehicles(): Promise<Vehicle[]> {
   return res.json();
 }
 
+export interface BackendHarvest {
+  id: string;
+  scenario_id: string;
+  commodity_id: string;
+  label: string;
+  location_lat: number;
+  location_lng: number;
+  volume_kg: number;
+  harvested_at: string;
+  destination_lat: number;
+  destination_lng: number;
+  destination_name: string;
+  handling_factor: number;
+  commodity_name?: string;
+  perishability_class?: "A" | "B" | "C" | "D" | "E";
+  shelf_life_hours?: number;
+  created_at?: string;
+}
+
+export interface HarvestCreatePayload {
+  commodity_id: string;
+  label: string;
+  location_lat: number;
+  location_lng: number;
+  volume_kg: number;
+  harvested_at: string;
+  destination_lat: number;
+  destination_lng: number;
+  destination_name: string;
+  handling_factor: number;
+}
+
+export interface Scenario {
+  id: string;
+  name: string;
+  status: string;
+  optimization_mode: string;
+  created_at?: string;
+  updated_at?: string;
+  harvest_count?: number;
+}
+
+export const DEFAULT_SCENARIO_ID = "11111111-1111-1111-1111-111111111111";
+
+export async function getScenarios(): Promise<Scenario[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/scenarios`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: Gagal memuat skenario`);
+    return res.json();
+  } catch (err) {
+    console.warn("Gagal memuat skenario dari backend:", err);
+    return [];
+  }
+}
+
+export async function getHarvests(scenarioId = DEFAULT_SCENARIO_ID): Promise<BackendHarvest[]> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/scenarios/${scenarioId}/harvests`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}: Gagal memuat data panen`);
+    return res.json();
+  } catch (err) {
+    console.warn(`Gagal memuat panen skenario ${scenarioId}:`, err);
+    return [];
+  }
+}
+
+export async function createHarvest(
+  harvest: HarvestCreatePayload,
+  scenarioId = DEFAULT_SCENARIO_ID
+): Promise<BackendHarvest> {
+  const res = await fetch(`${API_BASE_URL}/scenarios/${scenarioId}/harvests`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(harvest),
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(`HTTP ${res.status}: Gagal menyimpan panen ke backend (${errText})`);
+  }
+  return res.json();
+}
+
+export async function deleteHarvest(harvestId: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE_URL}/harvests/${harvestId}`, {
+      method: "DELETE",
+    });
+    return res.ok || res.status === 204;
+  } catch (err) {
+    console.warn(`Gagal menghapus panen ${harvestId}:`, err);
+    return false;
+  }
+}
+
+export function backendHarvestToFrontend(
+  bh: BackendHarvest,
+  commoditiesCatalog: Commodity[] = FALLBACK_COMMODITIES
+) {
+  const matched = commoditiesCatalog.find(
+    (c) =>
+      c.id === bh.commodity_id ||
+      c.name.toLowerCase() === (bh.commodity_name || "").toLowerCase()
+  );
+
+  const pClass = (bh.perishability_class || matched?.perishability_class || "C") as
+    | "A"
+    | "B"
+    | "C"
+    | "D"
+    | "E";
+  const shelfLife = Number(bh.shelf_life_hours || matched?.shelf_life_hours || 48);
+  const harvestedTime = bh.harvested_at ? new Date(bh.harvested_at).getTime() : Date.now();
+  const hoursSince = Math.max(1, Math.round((Date.now() - harvestedTime) / (1000 * 3600)));
+  const price = matched?.default_price_idr_per_kg || 15000;
+
+  const classLabels: Record<string, string> = {
+    A: "Sangat Mudah Rusak",
+    B: "Mudah Rusak",
+    C: "Cukup Tahan",
+    D: "Tahan Lama",
+    E: "Pangan Pokok (Tahan Lama)",
+  };
+
+  return {
+    id: bh.id,
+    komoditas: bh.commodity_name || matched?.name || bh.label,
+    lokasi: bh.label || "Titik Penjemputan",
+    volume: Number(bh.volume_kg),
+    jamSejakPanen: hoursSince,
+    shelfLife,
+    kelas: pClass,
+    kelasLabel: classLabels[pClass] || `Kelas ${pClass}`,
+    nilaiPerKg: price,
+    lat: Number(bh.location_lat),
+    lng: Number(bh.location_lng),
+    urgency: Math.min(100, Math.round((hoursSince / shelfLife) * 100)),
+  };
+}
+
 export async function runOptimization(scenarioId: string, mode: string): Promise<ComparisonData> {
   try {
     const res = await fetch(`${API_BASE_URL}/optimization/run`, {

@@ -19,6 +19,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Info, Plus, MapPin } from "lucide-react";
+import { toast } from "sonner";
+import { createHarvest, type HarvestCreatePayload } from "@/services/api";
 import {
   LOCATION_COORDINATES,
   LOCATION_PRESETS,
@@ -109,8 +111,34 @@ const COMMODITY_PRESETS = [
   { name: "Beras Medium", kelas: "E", shelf: 4320, price: 13500 },
 ];
 
-export function AddHarvestDialog({ onAdd }: { onAdd: (h: Harvest) => void }) {
+const COMMODITY_UUID_MAP: Record<string, string> = {
+  Tomat: "aa734536-8c6d-478f-b53e-2d97485f7835",
+  "Bayam (Sayur Daun)": "a683daaf-b319-4b44-992b-0186a61b0588",
+  Stroberi: "7263cdc3-3279-4a49-ba79-8760d495accc",
+  "Cabai Rawit Merah": "0b89dc68-f06e-438a-acec-6b282ed535e9",
+  Paprika: "f9ef4982-8374-4778-85ef-01558917fc30",
+  Kubis: "0883ddf3-6764-4631-a615-483e02506517",
+  "Pisang Ambon": "b2d26b6a-eddf-4e52-94bc-c4cd0384d71e",
+  "Kentang Granola": "38fd7642-4b51-4c66-8984-17b863c777f3",
+  "Bawang Merah": "404487ca-15e0-4062-a7b7-f18de868985a",
+  "Beras Medium": "18fb4952-7f3a-4a59-aa0b-680d9b31b9a2",
+};
+
+const DESTINATION_COORDINATES: Record<string, { lat: number; lng: number }> = {
+  "Pasar Induk Caringin": { lat: -6.92, lng: 107.61 },
+  "Pasar Induk Giwangan": { lat: -7.834, lng: 110.3912 },
+  "Gudang Sentra Koperasi": { lat: -7.502, lng: 110.2185 },
+};
+
+export function AddHarvestDialog({
+  onAdd,
+  onAddSuccess,
+}: {
+  onAdd?: (h: Harvest) => void;
+  onAddSuccess?: () => Promise<void> | void;
+}) {
   const [open, setOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [komoditas, setKomoditas] = useState(COMMODITY_PRESETS[0].name);
   const [presetLocation, setPresetLocation] = useState(LOCATION_PRESETS[0] || "Titik A — Desa Sawangan");
   const [customLocationName, setCustomLocationName] = useState("");
@@ -145,12 +173,29 @@ export function AddHarvestDialog({ onAdd }: { onAdd: (h: Harvest) => void }) {
     }
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!komoditas || !volume) return;
+    setIsSubmitting(true);
     const finalLocation = presetLocation === "custom" ? customLocationName || "Lokasi Kustom" : presetLocation;
     const hours = Number(jamSejakPanen) || 0;
     const shelf = Number(shelfLife) || 48;
-    const newHarvest: Harvest = {
+    const factor = initialCondition === "critical" ? 1.6 : initialCondition === "slightly_bruised" ? 1.3 : 1.0;
+    const destCoord = DESTINATION_COORDINATES[destination] || { lat: -6.92, lng: 107.61 };
+
+    const payload: HarvestCreatePayload = {
+      commodity_id: COMMODITY_UUID_MAP[komoditas] || "aa734536-8c6d-478f-b53e-2d97485f7835",
+      label: `${komoditas} (${finalLocation})`,
+      location_lat: Number(lat) || DEFAULT_COORDINATE[0],
+      location_lng: Number(lng) || DEFAULT_COORDINATE[1],
+      volume_kg: Number(volume),
+      harvested_at: new Date(Date.now() - hours * 3600 * 1000).toISOString(),
+      destination_lat: destCoord.lat,
+      destination_lng: destCoord.lng,
+      destination_name: destination,
+      handling_factor: factor,
+    };
+
+    const localHarvest: Harvest = {
       id: "HRV-" + String(Math.floor(Math.random() * 900) + 100),
       komoditas,
       lokasi: finalLocation,
@@ -159,16 +204,36 @@ export function AddHarvestDialog({ onAdd }: { onAdd: (h: Harvest) => void }) {
       shelfLife: shelf,
       kelas,
       kelasLabel: CLASS_LABELS[kelas] || `Kelas ${kelas}`,
-      nilaiPerKg: Number(nilaiPerKg) || 0,
+      nilaiPerKg: Number(nilaiPerKg) || 15000,
       lat: Number(lat) || DEFAULT_COORDINATE[0],
       lng: Number(lng) || DEFAULT_COORDINATE[1],
       urgency: Math.min(100, Math.round((hours / shelf) * 100)),
     };
-    onAdd(newHarvest);
-    setOpen(false);
-    // Reset form
-    setVolume("300");
-    setJamSejakPanen("6");
+
+    try {
+      const created = await createHarvest(payload);
+      toast.success(`Data panen ${komoditas} (${volume} kg) berhasil disimpan ke database!`);
+      if (onAddSuccess) {
+        await onAddSuccess();
+      } else {
+        onAdd?.({
+          ...localHarvest,
+          id: created.id || localHarvest.id,
+        });
+      }
+      setOpen(false);
+      setVolume("300");
+      setJamSejakPanen("6");
+    } catch (err: any) {
+      console.warn("Gagal menyimpan panen ke backend, beralih ke state lokal:", err);
+      toast.info(`Mode lokal: Panen ${komoditas} (${volume} kg) ditambahkan ke antarmuka.`);
+      onAdd?.(localHarvest);
+      setOpen(false);
+      setVolume("300");
+      setJamSejakPanen("6");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -291,8 +356,12 @@ export function AddHarvestDialog({ onAdd }: { onAdd: (h: Harvest) => void }) {
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={submit} className="bg-emerald-600 text-white hover:bg-emerald-700">
-            Simpan Data Panen
+          <Button
+            onClick={submit}
+            disabled={isSubmitting}
+            className="bg-emerald-600 text-white hover:bg-emerald-700"
+          >
+            {isSubmitting ? "Menyimpan ke Database..." : "Simpan Data Panen"}
           </Button>
         </DialogFooter>
       </DialogContent>

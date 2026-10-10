@@ -13,11 +13,15 @@ import { INITIAL_HARVESTS, VEHICLE, type Harvest, type Mode } from "@/components
 import {
   getCommodities,
   getVehicles,
+  getHarvests,
+  deleteHarvest,
+  backendHarvestToFrontend,
   DEMO_FALLBACK_COMPARISON,
   runDynamicScenario,
   calculateClientOptimization,
   type ComparisonData,
 } from "@/services/api";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -48,11 +52,28 @@ function Index() {
   const [activeTab, setActiveTab] = useState<"comparison" | "map">("comparison");
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
 
+  const loadHarvestsFromBackend = async () => {
+    try {
+      const [backendItems, catalog] = await Promise.all([getHarvests(), getCommodities()]);
+      if (backendItems && backendItems.length > 0) {
+        const mapped = backendItems.map((bh) => backendHarvestToFrontend(bh, catalog));
+        setHarvests(mapped);
+        return mapped;
+      }
+    } catch (err) {
+      console.warn("Gagal memuat panen dari backend:", err);
+    }
+    return null;
+  };
+
   useEffect(() => {
     async function checkBackend() {
       try {
-        await Promise.all([getCommodities(), getVehicles()]);
-        setIsBackendConnected(true);
+        const [comms, vehs] = await Promise.all([getCommodities(), getVehicles()]);
+        if (comms.length > 0 && vehs.length > 0) {
+          setIsBackendConnected(true);
+          await loadHarvestsFromBackend();
+        }
       } catch {
         setIsBackendConnected(false);
       }
@@ -194,7 +215,12 @@ function Index() {
             <CommodityAdminDialog />
             <TestReportDialog />
             <FormulaDialog />
-            <AddHarvestDialog onAdd={(h) => setHarvests((p) => [...p, h])} />
+            <AddHarvestDialog
+              onAdd={(h) => setHarvests((p) => [...p, h])}
+              onAddSuccess={async () => {
+                await loadHarvestsFromBackend();
+              }}
+            />
           </div>
         </div>
       </div>
@@ -218,7 +244,17 @@ function Index() {
 
         <HarvestTable
           harvests={harvests}
-          onDelete={(id) => setHarvests((p) => p.filter((x) => x.id !== id))}
+          onDelete={async (id) => {
+            setHarvests((p) => p.filter((x) => x.id !== id));
+            if (id.includes("-") && id.length > 10) {
+              try {
+                await deleteHarvest(id);
+                toast.success("Data panen berhasil dihapus dari database");
+              } catch (err) {
+                console.warn("Gagal menghapus panen backend:", err);
+              }
+            }
+          }}
           onUpdate={(u) => setHarvests((p) => p.map((x) => (x.id === u.id ? u : x)))}
         />
       </main>
