@@ -30,14 +30,66 @@ export const Route = createFileRoute("/")({
   component: Index,
 });
 
+type TabType = "comparison" | "map";
+
+function getInitialTab(): TabType {
+  if (typeof window !== "undefined") {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const tabParam = params.get("tab")?.toLowerCase();
+      if (tabParam === "map" || tabParam === "peta") return "map";
+      if (tabParam === "comparison" || tabParam === "komparasi") return "comparison";
+
+      const savedTab = localStorage.getItem("jagapanen_active_tab");
+      if (savedTab === "map" || savedTab === "comparison") return savedTab as TabType;
+    } catch {
+      // Fallback
+    }
+  }
+  return "comparison";
+}
+
 function Index() {
   const [mode] = useState<Mode>("spoilage");
   const [harvests, setHarvests] = useState<Harvest[]>([]);
   const [isHarvestsLoading, setIsHarvestsLoading] = useState<boolean>(true);
   const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
   const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
-  const [activeTab, setActiveTab] = useState<"comparison" | "map">("comparison");
+  const [activeTab, setActiveTab] = useState<TabType>(getInitialTab);
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
+
+  const handleTabChange = (newTab: TabType) => {
+    setActiveTab(newTab);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem("jagapanen_active_tab", newTab);
+        const url = new URL(window.location.href);
+        url.searchParams.set("tab", newTab);
+        window.history.replaceState(null, "", url.toString());
+      } catch (e) {
+        console.warn("Gagal memperbarui URL/localStorage tab:", e);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const initial = getInitialTab();
+        if (initial !== activeTab) {
+          setActiveTab(initial);
+        }
+        const url = new URL(window.location.href);
+        if (url.searchParams.get("tab") !== initial) {
+          url.searchParams.set("tab", initial);
+          window.history.replaceState(null, "", url.toString());
+        }
+        localStorage.setItem("jagapanen_active_tab", initial);
+      } catch {
+        // Safe SSR hydration
+      }
+    }
+  }, []);
 
   const loadHarvestsFromBackend = async () => {
     setIsHarvestsLoading(true);
@@ -192,7 +244,7 @@ function Index() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
             <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 w-full sm:w-auto">
               <button
-                onClick={() => setActiveTab("comparison")}
+                onClick={() => handleTabChange("comparison")}
                 className={`flex-1 sm:flex-none justify-center rounded-md px-2.5 sm:px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
                   activeTab === "comparison" ? "bg-white text-zinc-900 shadow-xs" : "text-zinc-500 hover:text-zinc-800"
                 }`}
@@ -202,7 +254,7 @@ function Index() {
                 <span className="sm:hidden">Komparasi</span>
               </button>
               <button
-                onClick={() => setActiveTab("map")}
+                onClick={() => handleTabChange("map")}
                 className={`flex-1 sm:flex-none justify-center rounded-md px-2.5 sm:px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
                   activeTab === "map" ? "bg-white text-zinc-900 shadow-xs" : "text-zinc-500 hover:text-zinc-800"
                 }`}
