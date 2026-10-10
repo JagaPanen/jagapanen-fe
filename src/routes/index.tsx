@@ -16,7 +16,7 @@ import {
   getHarvests,
   deleteHarvest,
   backendHarvestToFrontend,
-  DEMO_FALLBACK_COMPARISON,
+  EMPTY_COMPARISON,
   runDynamicScenario,
   calculateClientOptimization,
   type ComparisonData,
@@ -35,7 +35,7 @@ function Index() {
   const [harvests, setHarvests] = useState<Harvest[]>([]);
   const [isHarvestsLoading, setIsHarvestsLoading] = useState<boolean>(true);
   const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
-  const [comparisonData, setComparisonData] = useState<ComparisonData>(DEMO_FALLBACK_COMPARISON);
+  const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
   const [activeTab, setActiveTab] = useState<"comparison" | "map">("comparison");
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
 
@@ -64,9 +64,11 @@ function Index() {
         return mapped;
       } else {
         setHarvests([]);
+        setComparisonData(EMPTY_COMPARISON);
       }
     } catch (err) {
       console.warn("Gagal memuat panen dari backend:", err);
+      setComparisonData(EMPTY_COMPARISON);
     } finally {
       setIsHarvestsLoading(false);
     }
@@ -250,7 +252,7 @@ function Index() {
 
         {/* Tampilan Komparasi SOW Task 3, 4, 5 */}
         {activeTab === "comparison" ? (
-          <ComparisonView data={comparisonData} />
+          <ComparisonView data={comparisonData} isLoading={isHarvestsLoading || isCalculating} />
         ) : (
           <div className="w-full border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
             <RouteMap harvests={harvests} mode={mode} />
@@ -261,7 +263,25 @@ function Index() {
           harvests={harvests}
           isLoading={isHarvestsLoading}
           onDelete={async (id) => {
-            setHarvests((p) => p.filter((x) => x.id !== id));
+            const updated = harvests.filter((x) => x.id !== id);
+            setHarvests(updated);
+            if (updated.length > 0) {
+              const recalculated = calculateClientOptimization({
+                destination: { lat: VEHICLE.marketCoord[0], lng: VEHICLE.marketCoord[1], name: VEHICLE.tujuan },
+                vehicles: [
+                  {
+                    name: VEHICLE.nama,
+                    location: { lat: VEHICLE.poolCoord[0], lng: VEHICLE.poolCoord[1], name: VEHICLE.pool },
+                    capacity_kg: VEHICLE.kapasitas,
+                    cost_per_km_idr: 5000,
+                  },
+                ],
+                harvests: updated,
+              });
+              setComparisonData(recalculated);
+            } else {
+              setComparisonData(EMPTY_COMPARISON);
+            }
             if (id.includes("-") && id.length > 10) {
               try {
                 await deleteHarvest(id);
@@ -271,7 +291,23 @@ function Index() {
               }
             }
           }}
-          onUpdate={(u) => setHarvests((p) => p.map((x) => (x.id === u.id ? u : x)))}
+          onUpdate={(u) => {
+            const updated = harvests.map((x) => (x.id === u.id ? u : x));
+            setHarvests(updated);
+            const recalculated = calculateClientOptimization({
+              destination: { lat: VEHICLE.marketCoord[0], lng: VEHICLE.marketCoord[1], name: VEHICLE.tujuan },
+              vehicles: [
+                {
+                  name: VEHICLE.nama,
+                  location: { lat: VEHICLE.poolCoord[0], lng: VEHICLE.poolCoord[1], name: VEHICLE.pool },
+                  capacity_kg: VEHICLE.kapasitas,
+                  cost_per_km_idr: 5000,
+                },
+              ],
+              harvests: updated,
+            });
+            setComparisonData(recalculated);
+          }}
         />
       </main>
     </div>

@@ -231,6 +231,39 @@ export const DEMO_FALLBACK_COMPARISON: ComparisonData = {
   }
 };
 
+export const EMPTY_COMPARISON: ComparisonData = {
+  baseline: {
+    mode: "Baseline (Jarak Terpendek)",
+    vehicle_used: "Pick-up Colt L300 (1.000 kg)",
+    total_distance_km: 0,
+    total_duration_minutes: 0,
+    logistics_cost_idr: 0,
+    spoilage_risk_score: 0,
+    food_loss_avoided_kg: 0,
+    economic_loss_avoided_idr: 0,
+    additional_logistics_cost_idr: 0,
+    net_retained_margin_idr: 0,
+    quality_violations_count: 0,
+    explainability_reasons: ["Belum ada data panen untuk dioptimalkan."],
+    stops: [],
+  },
+  jagaPanen: {
+    mode: "JagaPanen (Spoilage-Aware)",
+    vehicle_used: "Pick-up Colt L300 (1.000 kg)",
+    total_distance_km: 0,
+    total_duration_minutes: 0,
+    logistics_cost_idr: 0,
+    spoilage_risk_score: 0,
+    food_loss_avoided_kg: 0,
+    economic_loss_avoided_idr: 0,
+    additional_logistics_cost_idr: 0,
+    net_retained_margin_idr: 0,
+    quality_violations_count: 0,
+    explainability_reasons: ["Belum ada data panen untuk dioptimalkan."],
+    stops: [],
+  },
+};
+
 export async function checkHealth() {
   const healthUrl = API_BASE_URL.startsWith("http")
     ? API_BASE_URL.replace(/\/api(?:\/v1)?\/?$/, "") + "/health"
@@ -457,7 +490,7 @@ export function calculateClientOptimization(payload: any): ComparisonData {
 
   const rawHarvests = payload.harvests || [];
   if (rawHarvests.length === 0) {
-    return DEMO_FALLBACK_COMPARISON;
+    return EMPTY_COMPARISON;
   }
 
   const items = rawHarvests.map((h: any, idx: number) => {
