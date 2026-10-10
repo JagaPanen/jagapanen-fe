@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ShieldCheck, Database, RefreshCw, Layers, Play } from "lucide-react";
@@ -24,72 +24,57 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>) => {
+    const raw = (search.tab as string)?.toLowerCase();
+    let tab: "comparison" | "map" = "comparison";
+    if (raw === "map" || raw === "peta") {
+      tab = "map";
+    } else if (raw === "comparison" || raw === "komparasi") {
+      tab = "comparison";
+    } else if (typeof window !== "undefined") {
+      try {
+        const cached = localStorage.getItem("jagapanen_active_tab");
+        if (cached === "map" || cached === "comparison") {
+          tab = cached as "comparison" | "map";
+        }
+      } catch {
+        // Fallback
+      }
+    }
+    return {
+      tab,
+    };
+  },
   head: () => ({
     meta: [{ title: "JagaPanen" }],
   }),
   component: Index,
 });
 
-type TabType = "comparison" | "map";
-
-function getInitialTab(): TabType {
-  if (typeof window !== "undefined") {
-    try {
-      const params = new URLSearchParams(window.location.search);
-      const tabParam = params.get("tab")?.toLowerCase();
-      if (tabParam === "map" || tabParam === "peta") return "map";
-      if (tabParam === "comparison" || tabParam === "komparasi") return "comparison";
-
-      const savedTab = localStorage.getItem("jagapanen_active_tab");
-      if (savedTab === "map" || savedTab === "comparison") return savedTab as TabType;
-    } catch {
-      // Fallback
-    }
-  }
-  return "comparison";
-}
-
 function Index() {
+  const { tab: activeTab } = Route.useSearch();
+  const navigate = useNavigate({ from: Route.fullPath });
+
   const [mode] = useState<Mode>("spoilage");
   const [harvests, setHarvests] = useState<Harvest[]>([]);
   const [isHarvestsLoading, setIsHarvestsLoading] = useState<boolean>(true);
   const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
   const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
-  const [activeTab, setActiveTab] = useState<TabType>(getInitialTab);
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
 
-  const handleTabChange = (newTab: TabType) => {
-    setActiveTab(newTab);
+  const handleTabChange = (newTab: "comparison" | "map") => {
+    navigate({
+      search: (prev: any) => ({ ...prev, tab: newTab }),
+      replace: true,
+    });
     if (typeof window !== "undefined") {
       try {
         localStorage.setItem("jagapanen_active_tab", newTab);
-        const url = new URL(window.location.href);
-        url.searchParams.set("tab", newTab);
-        window.history.replaceState(null, "", url.toString());
-      } catch (e) {
-        console.warn("Gagal memperbarui URL/localStorage tab:", e);
+      } catch {
+        // Safe localStorage
       }
     }
   };
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const initial = getInitialTab();
-        if (initial !== activeTab) {
-          setActiveTab(initial);
-        }
-        const url = new URL(window.location.href);
-        if (url.searchParams.get("tab") !== initial) {
-          url.searchParams.set("tab", initial);
-          window.history.replaceState(null, "", url.toString());
-        }
-        localStorage.setItem("jagapanen_active_tab", initial);
-      } catch {
-        // Safe SSR hydration
-      }
-    }
-  }, []);
 
   const loadHarvestsFromBackend = async () => {
     setIsHarvestsLoading(true);
