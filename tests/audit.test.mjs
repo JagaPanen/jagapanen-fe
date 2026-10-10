@@ -36,8 +36,8 @@ console.log("===================================================================
 console.log(">>> MODULE 1: Server Route Proxy & Upstream Health Check");
 
 try {
-  const ssrPath = path.resolve(rootDir, ".output/server/_ssr/ssr.mjs");
-  assert(fs.existsSync(ssrPath), ".output/server/_ssr/ssr.mjs must exist");
+  const ssrPath = path.resolve(rootDir, "dist/server/_ssr/ssr.mjs");
+  assert(fs.existsSync(ssrPath), "dist/server/_ssr/ssr.mjs must exist");
   const ssrModule = await import(`file://${ssrPath.replace(/\\/g, "/")}`);
   const server = ssrModule.default;
   assert(server && typeof server.fetch === "function", "Nitro server entry must export default.fetch");
