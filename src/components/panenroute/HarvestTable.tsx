@@ -99,7 +99,7 @@ export function HarvestTable({
                   <div className="flex flex-col items-center justify-center gap-2.5">
                     <div className="flex items-center gap-2 text-emerald-700 font-medium text-xs">
                       <Loader2 className="h-4 w-4 animate-spin text-emerald-600 shrink-0" />
-                      <span className="animate-pulse">Menghubungkan ke database & memuat data panen aktual...</span>
+                      <span className="animate-pulse">Memuat data...</span>
                     </div>
                     <div className="w-full max-w-sm space-y-2 pt-1 opacity-60">
                       <div className="h-3 bg-slate-200 rounded animate-pulse w-full" />
