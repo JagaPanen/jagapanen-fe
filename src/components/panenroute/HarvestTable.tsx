@@ -8,16 +8,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Pencil, Trash2 } from "lucide-react";
+import { Search, Pencil, Trash2, Loader2 } from "lucide-react";
 import { urgencyScore, type Harvest } from "./data";
 import { EditHarvestDialog } from "./Dialogs";
 
 export function HarvestTable({
   harvests,
+  isLoading = false,
   onDelete,
   onUpdate,
 }: {
   harvests: Harvest[];
+  isLoading?: boolean;
   onDelete?: (id: string) => void;
   onUpdate?: (h: Harvest) => void;
 }) {
@@ -91,74 +93,90 @@ export function HarvestTable({
             </tr>
           </thead>
           <tbody>
-            {rows.map((h) => {
-              const u = urgencyScore(h);
-              const critical = u >= 60;
-              const warn = u >= 30 && u < 60;
-              return (
-                <tr key={h.id} className="border-t border-slate-100 hover:bg-slate-50/70">
-                  <td className="px-4 py-2 font-mono text-zinc-500">{h.id}</td>
-                  <td className="px-4 py-2 font-medium text-zinc-900">{h.komoditas}</td>
-                  <td className="px-4 py-2 text-zinc-600">{h.lokasi}</td>
-                  <td className="px-4 py-2 text-zinc-900">{h.volume} kg</td>
-                  <td className="px-4 py-2 text-zinc-600">{h.jamSejakPanen} jam</td>
-                  <td className="px-4 py-2 text-zinc-600">{h.shelfLife} jam</td>
-                  <td className="px-4 py-2">
-                    <span className="text-zinc-900">Kelas {h.kelas}</span>
-                    <span className="block text-[10px] text-zinc-500">{h.kelasLabel}</span>
-                  </td>
-                  <td className="px-4 py-2">
-                    <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-16 rounded-full bg-slate-100">
-                        <div
-                          className={
-                            "h-1.5 rounded-full " +
-                            (critical ? "bg-rose-500" : warn ? "bg-amber-500" : "bg-emerald-500")
-                          }
-                          style={{ width: `${u}%` }}
-                        />
-                      </div>
-                      <span className="font-semibold text-zinc-900">{u}</span>
+            {isLoading && harvests.length === 0 ? (
+              <tr>
+                <td colSpan={10} className="px-4 py-12 text-center text-zinc-500">
+                  <div className="flex flex-col items-center justify-center gap-2.5">
+                    <div className="flex items-center gap-2 text-emerald-700 font-medium text-xs">
+                      <Loader2 className="h-4 w-4 animate-spin text-emerald-600 shrink-0" />
+                      <span className="animate-pulse">Menghubungkan ke database & memuat data panen aktual...</span>
                     </div>
-                  </td>
-                  <td className="px-4 py-2">
-                    {critical ? (
-                      <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100">Kritis</Badge>
-                    ) : warn ? (
-                      <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Perhatian</Badge>
-                    ) : (
-                      <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Aman</Badge>
-                    )}
-                  </td>
-                  <td className="px-4 py-2">
-                    <div className="flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => setEditingHarvest(h)}
-                        title="Edit Data Panen & Ganti Lokasi"
-                        className="rounded p-1 text-zinc-500 hover:bg-slate-100 hover:text-zinc-800 transition-colors"
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => onDelete?.(h.id)}
-                        title="Hapus Baris Data Panen"
-                        className="rounded p-1 text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" />
-                      </button>
+                    <div className="w-full max-w-sm space-y-2 pt-1 opacity-60">
+                      <div className="h-3 bg-slate-200 rounded animate-pulse w-full" />
+                      <div className="h-3 bg-slate-100 rounded animate-pulse w-3/4 mx-auto" />
                     </div>
-                  </td>
-                </tr>
-              );
-            })}
-            {rows.length === 0 && (
+                  </div>
+                </td>
+              </tr>
+            ) : rows.length === 0 ? (
               <tr>
                 <td colSpan={10} className="px-4 py-8 text-center text-zinc-500">
                   Tidak ada data panen yang cocok.
                 </td>
               </tr>
+            ) : (
+              rows.map((h) => {
+                const u = urgencyScore(h);
+                const critical = u >= 60;
+                const warn = u >= 30 && u < 60;
+                return (
+                  <tr key={h.id} className="border-t border-slate-100 hover:bg-slate-50/70">
+                    <td className="px-4 py-2 font-mono text-zinc-500">{h.id}</td>
+                    <td className="px-4 py-2 font-medium text-zinc-900">{h.komoditas}</td>
+                    <td className="px-4 py-2 text-zinc-600">{h.lokasi}</td>
+                    <td className="px-4 py-2 text-zinc-900">{h.volume} kg</td>
+                    <td className="px-4 py-2 text-zinc-600">{h.jamSejakPanen} jam</td>
+                    <td className="px-4 py-2 text-zinc-600">{h.shelfLife} jam</td>
+                    <td className="px-4 py-2">
+                      <span className="text-zinc-900">Kelas {h.kelas}</span>
+                      <span className="block text-[10px] text-zinc-500">{h.kelasLabel}</span>
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="flex items-center gap-2">
+                        <div className="h-1.5 w-16 rounded-full bg-slate-100">
+                          <div
+                            className={
+                              "h-1.5 rounded-full " +
+                              (critical ? "bg-rose-500" : warn ? "bg-amber-500" : "bg-emerald-500")
+                            }
+                            style={{ width: `${u}%` }}
+                          />
+                        </div>
+                        <span className="font-semibold text-zinc-900">{u}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-2">
+                      {critical ? (
+                        <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100">Kritis</Badge>
+                      ) : warn ? (
+                        <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Perhatian</Badge>
+                      ) : (
+                        <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Aman</Badge>
+                      )}
+                    </td>
+                    <td className="px-4 py-2">
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setEditingHarvest(h)}
+                          title="Edit Data Panen & Ganti Lokasi"
+                          className="rounded p-1 text-zinc-500 hover:bg-slate-100 hover:text-zinc-800 transition-colors"
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onDelete?.(h.id)}
+                          title="Hapus Baris Data Panen"
+                          className="rounded p-1 text-rose-500 hover:bg-rose-50 hover:text-rose-700 transition-colors"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>

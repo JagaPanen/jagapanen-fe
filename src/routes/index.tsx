@@ -9,7 +9,7 @@ import { FormulaDialog, AddHarvestDialog } from "@/components/panenroute/Dialogs
 import { ComparisonView } from "@/components/panenroute/ComparisonView";
 import { CommodityAdminDialog } from "@/components/panenroute/CommodityAdminDialog";
 import { TestReportDialog } from "@/components/panenroute/TestReportDialog";
-import { INITIAL_HARVESTS, VEHICLE, type Harvest, type Mode } from "@/components/panenroute/data";
+import { VEHICLE, type Harvest, type Mode } from "@/components/panenroute/data";
 import {
   getCommodities,
   getVehicles,
@@ -32,36 +32,43 @@ export const Route = createFileRoute("/")({
 
 function Index() {
   const [mode] = useState<Mode>("spoilage");
-  const [harvests, setHarvests] = useState<Harvest[]>(INITIAL_HARVESTS);
+  const [harvests, setHarvests] = useState<Harvest[]>([]);
+  const [isHarvestsLoading, setIsHarvestsLoading] = useState<boolean>(true);
   const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
-  const [comparisonData, setComparisonData] = useState<ComparisonData>(() => {
-    const validInitial = INITIAL_HARVESTS.filter((_, idx) => idx < 3);
-    return calculateClientOptimization({
-      destination: { lat: VEHICLE.marketCoord[0], lng: VEHICLE.marketCoord[1], name: VEHICLE.tujuan },
-      vehicles: [
-        {
-          name: VEHICLE.nama,
-          location: { lat: VEHICLE.poolCoord[0], lng: VEHICLE.poolCoord[1], name: VEHICLE.pool },
-          capacity_kg: VEHICLE.kapasitas,
-          cost_per_km_idr: 5000,
-        },
-      ],
-      harvests: validInitial,
-    });
-  });
+  const [comparisonData, setComparisonData] = useState<ComparisonData>(DEMO_FALLBACK_COMPARISON);
   const [activeTab, setActiveTab] = useState<"comparison" | "map">("comparison");
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
 
   const loadHarvestsFromBackend = async () => {
+    setIsHarvestsLoading(true);
     try {
       const [backendItems, catalog] = await Promise.all([getHarvests(), getCommodities()]);
       if (backendItems && backendItems.length > 0) {
         const mapped = backendItems.map((bh) => backendHarvestToFrontend(bh, catalog));
         setHarvests(mapped);
+
+        // Sinkronisasi kalkulasi rute awal saat data backend selesai dimuat
+        const initialCalculated = calculateClientOptimization({
+          destination: { lat: VEHICLE.marketCoord[0], lng: VEHICLE.marketCoord[1], name: VEHICLE.tujuan },
+          vehicles: [
+            {
+              name: VEHICLE.nama,
+              location: { lat: VEHICLE.poolCoord[0], lng: VEHICLE.poolCoord[1], name: VEHICLE.pool },
+              capacity_kg: VEHICLE.kapasitas,
+              cost_per_km_idr: 5000,
+            },
+          ],
+          harvests: mapped,
+        });
+        setComparisonData(initialCalculated);
         return mapped;
+      } else {
+        setHarvests([]);
       }
     } catch (err) {
       console.warn("Gagal memuat panen dari backend:", err);
+    } finally {
+      setIsHarvestsLoading(false);
     }
     return null;
   };
@@ -73,16 +80,20 @@ function Index() {
         if (comms.length > 0 && vehs.length > 0) {
           setIsBackendConnected(true);
           await loadHarvestsFromBackend();
+        } else {
+          setIsBackendConnected(false);
+          setIsHarvestsLoading(false);
         }
       } catch {
         setIsBackendConnected(false);
+        setIsHarvestsLoading(false);
       }
     }
     checkBackend();
   }, []);
 
   const totalVolume = harvests.reduce((s, h) => s + h.volume, 0);
-  const isOverload = totalVolume > VEHICLE.kapasitas;
+  const isOverload = !isHarvestsLoading && totalVolume > VEHICLE.kapasitas;
 
   const handleRunOptimization = async () => {
     setIsCalculating(true);
@@ -203,11 +214,15 @@ function Index() {
             <Button
               size="sm"
               onClick={handleRunOptimization}
-              disabled={isCalculating || isOverload}
+              disabled={isCalculating || isHarvestsLoading || isOverload || harvests.length === 0}
               className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8 shrink-0 justify-center shadow-xs"
             >
               <Play className="mr-1.5 h-3.5 w-3.5 shrink-0" />
-              {isCalculating ? "Menghitung Rute..." : "Kalkulasi Ulang Rute"}
+              {isCalculating
+                ? "Menghitung Rute..."
+                : isHarvestsLoading
+                ? "Memuat Data..."
+                : "Kalkulasi Ulang Rute"}
             </Button>
           </div>
 
@@ -244,6 +259,7 @@ function Index() {
 
         <HarvestTable
           harvests={harvests}
+          isLoading={isHarvestsLoading}
           onDelete={async (id) => {
             setHarvests((p) => p.filter((x) => x.id !== id));
             if (id.includes("-") && id.length > 10) {
