@@ -2,6 +2,7 @@ import "./lib/error-capture";
 
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { remoteApiBase } from "./lib/remote-api";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -18,8 +19,10 @@ async function getServerEntry(): Promise<ServerEntry> {
   return serverEntryPromise;
 }
 
-const REMOTE_API_BASE = "https://services.panenlink.id/api/v1";
-const REMOTE_ORIGIN = "https://services.panenlink.id";
+const REMOTE_API_BASE = remoteApiBase(
+  import.meta.env["VITE_REMOTE_API_BASE_URL"] as string | undefined,
+);
+const REMOTE_ORIGIN = new URL(REMOTE_API_BASE).origin;
 
 // Proxy handler untuk meneruskan /api/** ke server VPS backend Jagapanen
 async function handleApiProxy(request: Request, url: URL): Promise<Response> {
@@ -41,7 +44,7 @@ async function handleApiProxy(request: Request, url: URL): Promise<Response> {
   if (url.pathname === "/health" || url.pathname === "/api/health") {
     targetUrlString = `${REMOTE_ORIGIN}/health${url.search}`;
   } else {
-    let subPath = url.pathname.replace(/^\/api(?:\/v1)?/, "");
+    let subPath = url.pathname.replace(/^\/api/, "");
     if (!subPath.startsWith("/")) {
       subPath = "/" + subPath;
     }
@@ -85,13 +88,21 @@ async function handleApiProxy(request: Request, url: URL): Promise<Response> {
     const upstreamResponse = await fetch(targetUrlString, {
       method: request.method,
       headers: forwardedHeaders,
-      body,
+      ...(body !== undefined ? { body } : {}),
     });
 
     const responseHeaders = new Headers(upstreamResponse.headers);
+
     responseHeaders.set("Access-Control-Allow-Origin", "*");
-    responseHeaders.set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD");
-    responseHeaders.set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept");
+
+    responseHeaders.set(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD",
+    );
+    responseHeaders.set(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, X-Requested-With, Accept",
+    );
 
     responseHeaders.delete("content-encoding");
     responseHeaders.delete("content-length");
@@ -103,12 +114,13 @@ async function handleApiProxy(request: Request, url: URL): Promise<Response> {
       statusText: upstreamResponse.statusText,
       headers: responseHeaders,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
     console.error(`[API Proxy Error] Gagal memanggil ${targetUrlString}:`, err);
     return new Response(
       JSON.stringify({
         error: "Proxy upstream error",
-        message: err?.message || String(err),
+        message,
         target: targetUrlString,
       }),
       {
@@ -117,7 +129,7 @@ async function handleApiProxy(request: Request, url: URL): Promise<Response> {
           "Content-Type": "application/json",
           "Access-Control-Allow-Origin": "*",
         },
-      }
+      },
     );
   }
 }

@@ -21,6 +21,7 @@ const CLASS_COLORS: Record<Harvest["kelas"], string> = {
   B: "#d97706", // amber
   C: "#0284c7", // sky
   D: "#475569", // slate
+  E: "#2563eb", // blue
 };
 
 function poolIcon() {
@@ -146,11 +147,7 @@ export function RouteMapLeaflet({
 
   // Seluruh koordinat untuk auto fit bounds (termasuk Wonogiri di tenggara)
   const allCoords = useMemo<[number, number][]>(
-    () => [
-      POOL_COORD,
-      MARKET_COORD,
-      ...harvests.map((h) => [h.lat, h.lng] as [number, number]),
-    ],
+    () => [POOL_COORD, MARKET_COORD, ...harvests.map((h) => [h.lat, h.lng] as [number, number])],
     [harvests],
   );
 
@@ -258,7 +255,14 @@ export function RouteMapLeaflet({
             >
               <Popup>
                 <div style={{ fontFamily: "ui-sans-serif, system-ui", minWidth: 200 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 8,
+                    }}
+                  >
                     <p style={{ margin: 0, fontWeight: 800, fontSize: 13, color: "#18181b" }}>
                       {h.komoditas}
                     </p>
@@ -278,16 +282,29 @@ export function RouteMapLeaflet({
 
                   <p style={{ margin: "3px 0 0", fontSize: 11, color: "#71717a" }}>{h.lokasi}</p>
 
-                  <div style={{ margin: "8px 0 0", borderTop: "1px solid #f4f4f5", paddingTop: 6, fontSize: 11 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", margin: "2px 0" }}>
+                  <div
+                    style={{
+                      margin: "8px 0 0",
+                      borderTop: "1px solid #f4f4f5",
+                      paddingTop: 6,
+                      fontSize: 11,
+                    }}
+                  >
+                    <div
+                      style={{ display: "flex", justifyContent: "space-between", margin: "2px 0" }}
+                    >
                       <span style={{ color: "#71717a" }}>Volume:</span>
                       <strong style={{ color: "#18181b" }}>{h.volume} kg</strong>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", margin: "2px 0" }}>
+                    <div
+                      style={{ display: "flex", justifyContent: "space-between", margin: "2px 0" }}
+                    >
                       <span style={{ color: "#71717a" }}>Jam Sejak Panen:</span>
                       <span style={{ color: "#18181b" }}>{h.jamSejakPanen} jam lalu</span>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", margin: "2px 0" }}>
+                    <div
+                      style={{ display: "flex", justifyContent: "space-between", margin: "2px 0" }}
+                    >
                       <span style={{ color: "#71717a" }}>Sisa Shelf Life:</span>
                       <strong
                         style={{
@@ -297,7 +314,9 @@ export function RouteMapLeaflet({
                         {sisaShelfLife} jam ({h.shelfLife} jam total)
                       </strong>
                     </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", margin: "2px 0" }}>
+                    <div
+                      style={{ display: "flex", justifyContent: "space-between", margin: "2px 0" }}
+                    >
                       <span style={{ color: "#71717a" }}>Urgency:</span>
                       <span style={{ fontWeight: 700, color: u >= 60 ? "#e11d48" : "#d97706" }}>
                         {u}/100

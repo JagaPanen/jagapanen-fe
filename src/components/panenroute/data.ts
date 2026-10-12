@@ -115,8 +115,7 @@ export function urgencyScore(h: Harvest, transitHours = 2.4) {
   );
 }
 
-export const rupiah = (n: number) =>
-  "Rp " + Math.round(Math.abs(n)).toLocaleString("id-ID") + "";
+export const rupiah = (n: number) => "Rp " + Math.round(Math.abs(n)).toLocaleString("id-ID") + "";
 
 export type Mode = "cost" | "balanced" | "spoilage";
 
@@ -161,7 +160,8 @@ export const ROUTES = {
     kerugianLabel: "Kerugian Tertekan",
     badge: "Rute Kompromi Seimbang",
     badgeVariant: "amber" as const,
-    summaryNote: "Kompromi seimbang menyeimbangkan efisiensi BBM dan penyelamatan komoditas rentan.",
+    summaryNote:
+      "Kompromi seimbang menyeimbangkan efisiensi BBM dan penyelamatan komoditas rentan.",
   },
   rekomendasi: {
     id: "rekomendasi",
@@ -286,4 +286,3 @@ export function getRouteSequenceForMode(harvests: Harvest[], mode: Mode): Harves
     });
   }
 }
-

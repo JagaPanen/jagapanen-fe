@@ -42,7 +42,7 @@ That seed totals 1,100 kg, so the overload banner is visible and route recalcula
 
 ## API
 
-The browser calls `VITE_API_BASE_URL` (default `/api`). In dev, Vite proxies that prefix to `https://services.panenlink.id/api/v1`. `/api/health` and `/health` are rewritten to `https://services.panenlink.id/health`. The same proxy lives in `src/server.ts` for the Nitro server.
+The browser calls `VITE_API_BASE_URL` (default `/api`) in dev. Vite proxies that prefix to `VITE_REMOTE_API_BASE_URL` plus `/api/v1`. `/api/health` and `/health` are rewritten to the host's `/health`. The same proxy lives in `src/server.ts`. A production build calls that same host plus `/api/v1`.
 
 Copy `.env.example` to `.env` for local overrides:
 

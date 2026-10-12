@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -11,9 +11,14 @@ import { CommodityAdminDialog } from "@/components/panenroute/CommodityAdminDial
 import { TestReportDialog } from "@/components/panenroute/TestReportDialog";
 import { VEHICLE, type Harvest, type Mode } from "@/components/panenroute/data";
 import {
+  buildClientOptimizationInput,
+  buildDynamicScenarioPayload,
+} from "@/components/panenroute/planningRequest";
+import {
+  API_BASE_URL,
   getCommodities,
-  getVehicles,
   getHarvests,
+  probeBackend,
   deleteHarvest,
   backendHarvestToFrontend,
   EMPTY_COMPARISON,
@@ -25,7 +30,7 @@ import { toast } from "sonner";
 
 export const Route = createFileRoute("/")({
   validateSearch: (search: Record<string, unknown>) => {
-    const raw = (search.tab as string)?.toLowerCase();
+    const raw = (search["tab"] as string)?.toLowerCase();
     let tab: "comparison" | "map" = "comparison";
     if (raw === "map" || raw === "peta") {
       tab = "map";
@@ -59,12 +64,13 @@ function Index() {
   const [harvests, setHarvests] = useState<Harvest[]>([]);
   const [isHarvestsLoading, setIsHarvestsLoading] = useState<boolean>(true);
   const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
+  const [backendError, setBackendError] = useState<string | null>(null);
   const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
 
   const handleTabChange = (newTab: "comparison" | "map") => {
     navigate({
-      search: (prev: any) => ({ ...prev, tab: newTab }),
+      search: (prev) => ({ ...prev, tab: newTab }),
       replace: true,
     });
     if (typeof window !== "undefined") {
@@ -76,60 +82,60 @@ function Index() {
     }
   };
 
-  const loadHarvestsFromBackend = async () => {
+  const applyHarvests = useCallback((nextHarvests: Harvest[]) => {
+    setHarvests(nextHarvests);
+    setComparisonData(
+      nextHarvests.length > 0
+        ? calculateClientOptimization(buildClientOptimizationInput(nextHarvests))
+        : EMPTY_COMPARISON,
+    );
+  }, []);
+
+  const loadHarvestsFromBackend = useCallback(async () => {
     setIsHarvestsLoading(true);
     try {
       const [backendItems, catalog] = await Promise.all([getHarvests(), getCommodities()]);
-      if (backendItems && backendItems.length > 0) {
-        const mapped = backendItems.map((bh) => backendHarvestToFrontend(bh, catalog));
-        setHarvests(mapped);
-
-        // Sinkronisasi kalkulasi rute awal saat data backend selesai dimuat
-        const initialCalculated = calculateClientOptimization({
-          destination: { lat: VEHICLE.marketCoord[0], lng: VEHICLE.marketCoord[1], name: VEHICLE.tujuan },
-          vehicles: [
-            {
-              name: VEHICLE.nama,
-              location: { lat: VEHICLE.poolCoord[0], lng: VEHICLE.poolCoord[1], name: VEHICLE.pool },
-              capacity_kg: VEHICLE.kapasitas,
-              cost_per_km_idr: 5000,
-            },
-          ],
-          harvests: mapped,
-        });
-        setComparisonData(initialCalculated);
-        return mapped;
-      } else {
-        setHarvests([]);
-        setComparisonData(EMPTY_COMPARISON);
-      }
+      const mapped = Array.isArray(backendItems)
+        ? backendItems.map((item) => backendHarvestToFrontend(item, catalog))
+        : [];
+      applyHarvests(mapped);
+      return mapped;
     } catch (err) {
-      console.warn("Gagal memuat panen dari backend:", err);
+      console.error("[JagaPanen] Harvest load failed:", err);
       setComparisonData(EMPTY_COMPARISON);
+      return null;
     } finally {
       setIsHarvestsLoading(false);
     }
-    return null;
-  };
+  }, [applyHarvests]);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function checkBackend() {
       try {
-        const [comms, vehs] = await Promise.all([getCommodities(), getVehicles()]);
-        if (comms.length > 0 && vehs.length > 0) {
-          setIsBackendConnected(true);
-          await loadHarvestsFromBackend();
-        } else {
-          setIsBackendConnected(false);
-          setIsHarvestsLoading(false);
-        }
-      } catch {
+        await probeBackend();
+        if (cancelled) return;
+        setBackendError(null);
+        setIsBackendConnected(true);
+        await loadHarvestsFromBackend();
+      } catch (err) {
+        if (cancelled) return;
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("[JagaPanen] Backend check failed. API base:", API_BASE_URL, err);
+        setBackendError(message);
         setIsBackendConnected(false);
+        setComparisonData(EMPTY_COMPARISON);
         setIsHarvestsLoading(false);
+        toast.error("Backend tidak terjangkau", { description: message });
       }
     }
+
     checkBackend();
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [loadHarvestsFromBackend]);
 
   const totalVolume = harvests.reduce((s, h) => s + h.volume, 0);
   const isOverload = !isHarvestsLoading && totalVolume > VEHICLE.kapasitas;
@@ -138,43 +144,7 @@ function Index() {
     setIsCalculating(true);
     try {
       if (harvests.length > 0) {
-        const payload = {
-          scenario_name: "Live Planning Run",
-          destination: {
-            lat: VEHICLE.marketCoord[0],
-            lng: VEHICLE.marketCoord[1],
-            name: VEHICLE.tujuan,
-          },
-          harvests: harvests.map((h) => ({
-            id: h.id,
-            label: `${h.komoditas} (${h.lokasi})`,
-            commodity: h.komoditas,
-            commodity_name: h.komoditas,
-            perishability_class: h.kelas,
-            shelf_life_hours: h.shelfLife,
-            hours_since_harvest: h.jamSejakPanen,
-            price_per_kg: h.nilaiPerKg,
-            quantity_kg: h.volume,
-            location: { lat: h.lat, lng: h.lng, name: h.lokasi },
-            harvest_timestamp: new Date(Date.now() - h.jamSejakPanen * 3600 * 1000).toISOString(),
-            initial_condition: "fresh",
-            handling_factor:
-              h.kelas === "A" ? 1.6 : h.kelas === "B" ? 1.3 : h.kelas === "C" ? 1.1 : h.kelas === "D" ? 1.0 : 0.9,
-          })),
-          vehicles: [
-            {
-              id: "v-l300",
-              name: VEHICLE.nama,
-              location: { lat: VEHICLE.poolCoord[0], lng: VEHICLE.poolCoord[1], name: VEHICLE.pool },
-              capacity_kg: VEHICLE.kapasitas,
-              available: true,
-              cost_per_km_idr: 5000,
-            },
-          ],
-          mode: "spoilage_priority",
-        };
-
-        const res = await runDynamicScenario(payload);
+        const res = await runDynamicScenario(buildDynamicScenarioPayload(harvests));
         if (res && res.baseline && res.jagaPanen) {
           setComparisonData(res);
         }
@@ -198,7 +168,10 @@ function Index() {
             />
           </div>
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-            <Badge variant="outline" className="border-slate-200 rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-medium text-slate-600 bg-slate-50/50">
+            <Badge
+              variant="outline"
+              className="border-slate-200 rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-medium text-slate-600 bg-slate-50/50"
+            >
               Pilot: Koperasi Tani Maju Bersama
             </Badge>
             <Badge
@@ -221,6 +194,11 @@ function Index() {
             </Badge>
           </div>
         </div>
+        {backendError && (
+          <div className="mx-auto w-full max-w-[1600px] px-3.5 sm:px-5 pb-3 text-[11px] leading-snug text-amber-800 break-all">
+            API {API_BASE_URL}: {backendError}
+          </div>
+        )}
       </header>
 
       {/* Mode & Switcher Bar */}
@@ -231,7 +209,9 @@ function Index() {
               <button
                 onClick={() => handleTabChange("comparison")}
                 className={`flex-1 sm:flex-none justify-center rounded-md px-2.5 sm:px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-                  activeTab === "comparison" ? "bg-white text-zinc-900 shadow-xs" : "text-zinc-500 hover:text-zinc-800"
+                  activeTab === "comparison"
+                    ? "bg-white text-zinc-900 shadow-xs"
+                    : "text-zinc-500 hover:text-zinc-800"
                 }`}
               >
                 <Layers className="h-3.5 w-3.5 shrink-0" />
@@ -241,7 +221,9 @@ function Index() {
               <button
                 onClick={() => handleTabChange("map")}
                 className={`flex-1 sm:flex-none justify-center rounded-md px-2.5 sm:px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
-                  activeTab === "map" ? "bg-white text-zinc-900 shadow-xs" : "text-zinc-500 hover:text-zinc-800"
+                  activeTab === "map"
+                    ? "bg-white text-zinc-900 shadow-xs"
+                    : "text-zinc-500 hover:text-zinc-800"
                 }`}
               >
                 <RefreshCw className="h-3.5 w-3.5 shrink-0" />
@@ -260,8 +242,8 @@ function Index() {
               {isCalculating
                 ? "Menghitung Rute..."
                 : isHarvestsLoading
-                ? "Memuat Data..."
-                : "Kalkulasi Ulang Rute"}
+                  ? "Memuat Data..."
+                  : "Kalkulasi Ulang Rute"}
             </Button>
           </div>
 
@@ -282,8 +264,11 @@ function Index() {
       <main className="mx-auto w-full max-w-[1600px] flex-1 space-y-4 px-3 sm:px-5 py-3 sm:py-4">
         {isOverload && (
           <div className="w-full p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs rounded-xl shadow-sm">
-            ⚠️ <strong>Kapasitas Armada Terlampaui ({totalVolume} kg / {VEHICLE.kapasitas} kg).</strong> Hapus salah satu
-            baris panen di tabel agar kapasitas kembali aman.
+            ⚠️{" "}
+            <strong>
+              Kapasitas Armada Terlampaui ({totalVolume} kg / {VEHICLE.kapasitas} kg).
+            </strong>{" "}
+            Hapus salah satu baris panen di tabel agar kapasitas kembali aman.
           </div>
         )}
 
@@ -300,25 +285,7 @@ function Index() {
           harvests={harvests}
           isLoading={isHarvestsLoading}
           onDelete={async (id) => {
-            const updated = harvests.filter((x) => x.id !== id);
-            setHarvests(updated);
-            if (updated.length > 0) {
-              const recalculated = calculateClientOptimization({
-                destination: { lat: VEHICLE.marketCoord[0], lng: VEHICLE.marketCoord[1], name: VEHICLE.tujuan },
-                vehicles: [
-                  {
-                    name: VEHICLE.nama,
-                    location: { lat: VEHICLE.poolCoord[0], lng: VEHICLE.poolCoord[1], name: VEHICLE.pool },
-                    capacity_kg: VEHICLE.kapasitas,
-                    cost_per_km_idr: 5000,
-                  },
-                ],
-                harvests: updated,
-              });
-              setComparisonData(recalculated);
-            } else {
-              setComparisonData(EMPTY_COMPARISON);
-            }
+            applyHarvests(harvests.filter((item) => item.id !== id));
             if (id.includes("-") && id.length > 10) {
               try {
                 await deleteHarvest(id);
@@ -328,22 +295,10 @@ function Index() {
               }
             }
           }}
-          onUpdate={(u) => {
-            const updated = harvests.map((x) => (x.id === u.id ? u : x));
-            setHarvests(updated);
-            const recalculated = calculateClientOptimization({
-              destination: { lat: VEHICLE.marketCoord[0], lng: VEHICLE.marketCoord[1], name: VEHICLE.tujuan },
-              vehicles: [
-                {
-                  name: VEHICLE.nama,
-                  location: { lat: VEHICLE.poolCoord[0], lng: VEHICLE.poolCoord[1], name: VEHICLE.pool },
-                  capacity_kg: VEHICLE.kapasitas,
-                  cost_per_km_idr: 5000,
-                },
-              ],
-              harvests: updated,
-            });
-            setComparisonData(recalculated);
+          onUpdate={(updatedHarvest) => {
+            applyHarvests(
+              harvests.map((item) => (item.id === updatedHarvest.id ? updatedHarvest : item)),
+            );
           }}
         />
       </main>

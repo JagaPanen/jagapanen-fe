@@ -41,7 +41,9 @@ export function RouteMap({
           <span
             className={
               "flex items-center gap-1.5 transition-all duration-200 " +
-              (currentMode === "spoilage" ? "font-bold text-emerald-600" : "text-zinc-500 opacity-70")
+              (currentMode === "spoilage"
+                ? "font-bold text-emerald-600"
+                : "text-zinc-500 opacity-70")
             }
           >
             <span className="h-0.5 w-5 bg-emerald-600" /> Spoilage-Aware

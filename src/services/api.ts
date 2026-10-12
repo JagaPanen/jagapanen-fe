@@ -1,5 +1,66 @@
-export const API_BASE_URL =
-  (import.meta.env.VITE_API_BASE_URL as string) || "/api";
+import { remoteApiBase } from "@/lib/remote-api";
+
+const configured = (import.meta.env["VITE_API_BASE_URL"] as string | undefined)?.replace(/\/$/, "");
+
+/** Dev uses the local `/api` proxy. Production calls the host from env plus `/api/v1`. */
+export const API_BASE_URL = import.meta.env.PROD
+  ? remoteApiBase(import.meta.env["VITE_REMOTE_API_BASE_URL"] as string | undefined)
+  : configured || "/api";
+
+const API_TIMEOUT_MS = 12000;
+
+function apiUrl(path: string): string {
+  const base = API_BASE_URL.replace(/\/$/, "");
+  const suffix = path.startsWith("/") ? path : `/${path}`;
+  return `${base}${suffix}`;
+}
+
+/** Fetch JSON and always console.error on failure, including status, URL, and a body snippet. */
+export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const url = apiUrl(path);
+  const method = (init?.method ?? "GET").toUpperCase();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
+
+  try {
+    const res = await fetch(url, { ...init, signal: controller.signal });
+    const body = await res.text();
+
+    if (!res.ok) {
+      const message = `HTTP ${res.status} ${method} ${url}${body ? ` — ${body.slice(0, 180)}` : ""}`;
+      console.error("[JagaPanen API]", message);
+      throw new Error(message);
+    }
+
+    const contentType = res.headers.get("content-type") ?? "";
+    if (!contentType.includes("json")) {
+      const message = `Non-JSON ${res.status} ${method} ${url} (${contentType || "no content-type"}) — ${body.slice(0, 180)}`;
+      console.error("[JagaPanen API]", message);
+      throw new Error(message);
+    }
+
+    try {
+      return JSON.parse(body) as T;
+    } catch {
+      const message = `Invalid JSON ${method} ${url} — ${body.slice(0, 180)}`;
+      console.error("[JagaPanen API]", message);
+      throw new Error(message);
+    }
+  } catch (err) {
+    if (err instanceof Error && /^(HTTP |Non-JSON |Invalid JSON )/.test(err.message)) {
+      throw err;
+    }
+    const reason = err instanceof Error ? err.message : String(err);
+    const timedOut = err instanceof Error && err.name === "AbortError";
+    const message = timedOut
+      ? `Timeout ${API_TIMEOUT_MS}ms ${method} ${url}`
+      : `Network error ${method} ${url}: ${reason}. Often a CORS block or the host is unreachable. API base is ${API_BASE_URL}.`;
+    console.error("[JagaPanen API]", message, err);
+    throw new Error(message);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 export interface Commodity {
   id: string;
@@ -200,10 +261,43 @@ export const DEMO_FALLBACK_COMPARISON: ComparisonData = {
       "Tomat (Kelas A) tertunda di bak pick-up selama 65 menit melebihi batas mutu aman.",
     ],
     stops: [
-      { stop_order: 1, harvest_id: "H1", label: "Kebun Kubis Ciwidey", commodity_name: "Kubis", perishability_class: "C", volume_kg: 400, eta_minutes: 20, cumulative_distance_km: 10, projected_quality_hours_left: 45, violation: false },
-      { stop_order: 2, harvest_id: "H2", label: "Kebun Kentang Lembang", commodity_name: "Kentang", perishability_class: "D", volume_kg: 200, eta_minutes: 50, cumulative_distance_km: 26, projected_quality_hours_left: 110, violation: false },
-      { stop_order: 3, harvest_id: "H3", label: "Kebun Tomat Lembang", commodity_name: "Tomat", perishability_class: "A", volume_kg: 300, eta_minutes: 85, cumulative_distance_km: 42.5, projected_quality_hours_left: 2, violation: true },
-    ]
+      {
+        stop_order: 1,
+        harvest_id: "H1",
+        label: "Kebun Kubis Ciwidey",
+        commodity_name: "Kubis",
+        perishability_class: "C",
+        volume_kg: 400,
+        eta_minutes: 20,
+        cumulative_distance_km: 10,
+        projected_quality_hours_left: 45,
+        violation: false,
+      },
+      {
+        stop_order: 2,
+        harvest_id: "H2",
+        label: "Kebun Kentang Lembang",
+        commodity_name: "Kentang",
+        perishability_class: "D",
+        volume_kg: 200,
+        eta_minutes: 50,
+        cumulative_distance_km: 26,
+        projected_quality_hours_left: 110,
+        violation: false,
+      },
+      {
+        stop_order: 3,
+        harvest_id: "H3",
+        label: "Kebun Tomat Lembang",
+        commodity_name: "Tomat",
+        perishability_class: "A",
+        volume_kg: 300,
+        eta_minutes: 85,
+        cumulative_distance_km: 42.5,
+        projected_quality_hours_left: 2,
+        violation: true,
+      },
+    ],
   },
   jagaPanen: {
     mode: "JagaPanen (Spoilage-Aware)",
@@ -224,11 +318,44 @@ export const DEMO_FALLBACK_COMPARISON: ComparisonData = {
       "Kapasitas muatan tetap aman dan tidak melanggar batas armada.",
     ],
     stops: [
-      { stop_order: 1, harvest_id: "H3", label: "Kebun Tomat Lembang", commodity_name: "Tomat", perishability_class: "A", volume_kg: 300, eta_minutes: 25, cumulative_distance_km: 14, projected_quality_hours_left: 18, violation: false },
-      { stop_order: 2, harvest_id: "H1", label: "Kebun Kubis Ciwidey", commodity_name: "Kubis", perishability_class: "C", volume_kg: 400, eta_minutes: 60, cumulative_distance_km: 31, projected_quality_hours_left: 41, violation: false },
-      { stop_order: 3, harvest_id: "H2", label: "Kebun Kentang Lembang", commodity_name: "Kentang", perishability_class: "D", volume_kg: 200, eta_minutes: 96, cumulative_distance_km: 47.8, projected_quality_hours_left: 105, violation: false },
-    ]
-  }
+      {
+        stop_order: 1,
+        harvest_id: "H3",
+        label: "Kebun Tomat Lembang",
+        commodity_name: "Tomat",
+        perishability_class: "A",
+        volume_kg: 300,
+        eta_minutes: 25,
+        cumulative_distance_km: 14,
+        projected_quality_hours_left: 18,
+        violation: false,
+      },
+      {
+        stop_order: 2,
+        harvest_id: "H1",
+        label: "Kebun Kubis Ciwidey",
+        commodity_name: "Kubis",
+        perishability_class: "C",
+        volume_kg: 400,
+        eta_minutes: 60,
+        cumulative_distance_km: 31,
+        projected_quality_hours_left: 41,
+        violation: false,
+      },
+      {
+        stop_order: 3,
+        harvest_id: "H2",
+        label: "Kebun Kentang Lembang",
+        commodity_name: "Kentang",
+        perishability_class: "D",
+        volume_kg: 200,
+        eta_minutes: 96,
+        cumulative_distance_km: 47.8,
+        projected_quality_hours_left: 105,
+        violation: false,
+      },
+    ],
+  },
 };
 
 export const EMPTY_COMPARISON: ComparisonData = {
@@ -266,7 +393,7 @@ export const EMPTY_COMPARISON: ComparisonData = {
 
 export async function checkHealth() {
   const healthUrl = API_BASE_URL.startsWith("http")
-    ? API_BASE_URL.replace(/\/api(?:\/v1)?\/?$/, "") + "/health"
+    ? API_BASE_URL.replace(/\/api(?:\/v\d+)?\/?$/, "") + "/health"
     : `${API_BASE_URL}/health`;
   const response = await fetch(healthUrl);
   if (!response.ok) {
@@ -277,22 +404,37 @@ export async function checkHealth() {
 
 export async function getCommodities(): Promise<Commodity[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/commodities?active_only=true`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}: Gagal memuat komoditas`);
-    const data = await res.json();
+    const data = await apiJson<Commodity[]>("/commodities?active_only=true");
     return data && data.length > 0 ? data : FALLBACK_COMMODITIES;
   } catch (err) {
-    console.warn("Gagal memuat komoditas dari API, beralih ke fallback:", err);
+    console.error("[JagaPanen API] Commodity catalog failed, using offline fallback:", err);
     return FALLBACK_COMMODITIES;
   }
 }
 
 export async function getVehicles(): Promise<Vehicle[]> {
-  const res = await fetch(`${API_BASE_URL}/vehicles?active_only=true`);
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}: Gagal mengambil data armada`);
+  return apiJson<Vehicle[]>("/vehicles?active_only=true");
+}
+
+/** Real catalog + fleet. Throws; does not substitute the offline catalog. */
+export async function probeBackend(): Promise<{ commodities: Commodity[]; vehicles: Vehicle[] }> {
+  const [commodities, vehicles] = await Promise.all([
+    apiJson<Commodity[]>("/commodities?active_only=true"),
+    apiJson<Vehicle[]>("/vehicles?active_only=true"),
+  ]);
+
+  if (!Array.isArray(commodities) || commodities.length === 0) {
+    const message = `GET ${apiUrl("/commodities")} returned no commodity rows`;
+    console.error("[JagaPanen API]", message, commodities);
+    throw new Error(message);
   }
-  return res.json();
+  if (!Array.isArray(vehicles) || vehicles.length === 0) {
+    const message = `GET ${apiUrl("/vehicles")} returned no vehicles`;
+    console.error("[JagaPanen API]", message, vehicles);
+    throw new Error(message);
+  }
+
+  return { commodities, vehicles };
 }
 
 export interface BackendHarvest {
@@ -341,29 +483,25 @@ export const DEFAULT_SCENARIO_ID = "11111111-1111-1111-1111-111111111111";
 
 export async function getScenarios(): Promise<Scenario[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/scenarios`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}: Gagal memuat skenario`);
-    return res.json();
+    return await apiJson<Scenario[]>("/scenarios");
   } catch (err) {
-    console.warn("Gagal memuat skenario dari backend:", err);
+    console.error("[JagaPanen API] Scenario list failed:", err);
     return [];
   }
 }
 
 export async function getHarvests(scenarioId = DEFAULT_SCENARIO_ID): Promise<BackendHarvest[]> {
   try {
-    const res = await fetch(`${API_BASE_URL}/scenarios/${scenarioId}/harvests`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}: Gagal memuat data panen`);
-    return res.json();
+    return await apiJson<BackendHarvest[]>(`/scenarios/${scenarioId}/harvests`);
   } catch (err) {
-    console.warn(`Gagal memuat panen skenario ${scenarioId}:`, err);
+    console.error(`[JagaPanen API] Harvest list failed for scenario ${scenarioId}:`, err);
     return [];
   }
 }
 
 export async function createHarvest(
   harvest: HarvestCreatePayload,
-  scenarioId = DEFAULT_SCENARIO_ID
+  scenarioId = DEFAULT_SCENARIO_ID,
 ): Promise<BackendHarvest> {
   const res = await fetch(`${API_BASE_URL}/scenarios/${scenarioId}/harvests`, {
     method: "POST",
@@ -391,20 +529,15 @@ export async function deleteHarvest(harvestId: string): Promise<boolean> {
 
 export function backendHarvestToFrontend(
   bh: BackendHarvest,
-  commoditiesCatalog: Commodity[] = FALLBACK_COMMODITIES
+  commoditiesCatalog: Commodity[] = FALLBACK_COMMODITIES,
 ) {
   const matched = commoditiesCatalog.find(
     (c) =>
-      c.id === bh.commodity_id ||
-      c.name.toLowerCase() === (bh.commodity_name || "").toLowerCase()
+      c.id === bh.commodity_id || c.name.toLowerCase() === (bh.commodity_name || "").toLowerCase(),
   );
 
   const pClass = (bh.perishability_class || matched?.perishability_class || "C") as
-    | "A"
-    | "B"
-    | "C"
-    | "D"
-    | "E";
+    "A" | "B" | "C" | "D" | "E";
   const shelfLife = Number(bh.shelf_life_hours || matched?.shelf_life_hours || 48);
   const harvestedTime = bh.harvested_at ? new Date(bh.harvested_at).getTime() : Date.now();
   const hoursSince = Math.max(1, Math.round((Date.now() - harvestedTime) / (1000 * 3600)));
@@ -456,7 +589,12 @@ export async function runOptimization(scenarioId: string, mode: string): Promise
   }
 }
 
-export function haversineDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+export function haversineDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number,
+): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
   const dLon = ((lon2 - lon1) * Math.PI) / 180;
@@ -470,7 +608,39 @@ export function haversineDistanceKm(lat1: number, lon1: number, lat2: number, lo
   return Math.round(R * c * 10) / 10;
 }
 
-export function calculateClientOptimization(payload: any): ComparisonData {
+interface ClientHarvestInput {
+  id?: string;
+  label?: string;
+  commodity?: string;
+  commodity_name?: string;
+  komoditas?: string;
+  perishability_class?: string;
+  kelas?: string;
+  shelf_life_hours?: number;
+  shelfLife?: number;
+  hours_since_harvest?: number;
+  jamSejakPanen?: number;
+  quantity_kg?: number;
+  volume?: number;
+  price_per_kg?: number;
+  nilaiPerKg?: number;
+  lat?: number;
+  lng?: number;
+  location?: { lat?: number; lng?: number; name?: string };
+}
+
+interface ClientOptimizationPayload {
+  destination?: { lat?: number; lng?: number; name?: string };
+  vehicles?: Array<{
+    name?: string;
+    location?: { lat?: number; lng?: number; name?: string };
+    capacity_kg?: number;
+    cost_per_km_idr?: number;
+  }>;
+  harvests?: ClientHarvestInput[];
+}
+
+export function calculateClientOptimization(payload: ClientOptimizationPayload): ComparisonData {
   const vehicle = payload.vehicles?.[0] || {
     name: "Pick-up Colt L300",
     location: { lat: -7.502, lng: 110.2185, name: "Pool Koperasi Tani (Magelang)" },
@@ -487,13 +657,15 @@ export function calculateClientOptimization(payload: any): ComparisonData {
     lng: 110.3912,
     name: "Pasar Induk Giwangan",
   };
+  const destLat = Number(dest.lat ?? -7.834);
+  const destLng = Number(dest.lng ?? 110.3912);
 
   const rawHarvests = payload.harvests || [];
   if (rawHarvests.length === 0) {
     return EMPTY_COMPARISON;
   }
 
-  const items = rawHarvests.map((h: any, idx: number) => {
+  const items = rawHarvests.map((h, idx) => {
     const pClass = (h.perishability_class || h.kelas || "C").toUpperCase();
     const shelfLife = Number(
       h.shelf_life_hours ||
@@ -505,7 +677,8 @@ export function calculateClientOptimization(payload: any): ComparisonData {
     const price = Number(h.price_per_kg || h.nilaiPerKg || 15000);
     const lat = Number(h.location?.lat ?? h.lat ?? -7.5);
     const lng = Number(h.location?.lng ?? h.lng ?? 110.3);
-    const label = h.label || `${h.commodity || "Komoditas"} (${h.location?.name || `Titik ${idx + 1}`})`;
+    const label =
+      h.label || `${h.commodity || "Komoditas"} (${h.location?.name || `Titik ${idx + 1}`})`;
     const commName = h.commodity_name || h.commodity || h.komoditas || "Komoditas";
 
     // Urgency score: Kelas A = 100, B = 70, C = 40, D = 10 + rasio umur/shelfLife
@@ -539,18 +712,22 @@ export function calculateClientOptimization(payload: any): ComparisonData {
     let nearestIdx = 0;
     let minDist = Infinity;
     for (let i = 0; i < unvisitedBase.length; i++) {
-      const d = haversineDistanceKm(curLat, curLng, unvisitedBase[i].lat, unvisitedBase[i].lng);
+      const candidate = unvisitedBase[i];
+      if (!candidate) continue;
+      const d = haversineDistanceKm(curLat, curLng, candidate.lat, candidate.lng);
       if (d < minDist) {
         minDist = d;
         nearestIdx = i;
       }
     }
     const picked = unvisitedBase.splice(nearestIdx, 1)[0];
+    if (!picked) break;
     baseCumDist += minDist;
     const etaMinutes = Math.round((baseCumDist / 35) * 60);
     const hoursLeft = Math.max(
       0,
-      Math.round((picked.shelf_life_hours - (picked.hours_since_harvest + etaMinutes / 60)) * 10) / 10,
+      Math.round((picked.shelf_life_hours - (picked.hours_since_harvest + etaMinutes / 60)) * 10) /
+        10,
     );
     const isViolation =
       (picked.perishability_class === "A" && (order >= 3 || hoursLeft < 35)) ||
@@ -573,7 +750,7 @@ export function calculateClientOptimization(payload: any): ComparisonData {
     curLng = picked.lng;
   }
 
-  const distToDest = haversineDistanceKm(curLat, curLng, dest.lat, dest.lng);
+  const distToDest = haversineDistanceKm(curLat, curLng, destLat, destLng);
   baseCumDist += distToDest;
   const baseTotalDistance = Math.round(baseCumDist * 10) / 10;
   const baseTotalDurationMinutes = Math.round((baseCumDist / 35) * 60);
@@ -598,7 +775,8 @@ export function calculateClientOptimization(payload: any): ComparisonData {
     const etaMinutes = Math.round((jagaCumDist / 35) * 60);
     const hoursLeft = Math.max(
       0,
-      Math.round((picked.shelf_life_hours - (picked.hours_since_harvest + etaMinutes / 60)) * 10) / 10,
+      Math.round((picked.shelf_life_hours - (picked.hours_since_harvest + etaMinutes / 60)) * 10) /
+        10,
     );
 
     jagaStops.push({
@@ -618,7 +796,7 @@ export function calculateClientOptimization(payload: any): ComparisonData {
     curLng = picked.lng;
   }
 
-  const distJagaToDest = haversineDistanceKm(curLat, curLng, dest.lat, dest.lng);
+  const distJagaToDest = haversineDistanceKm(curLat, curLng, destLat, destLng);
   jagaCumDist += distJagaToDest;
   const jagaTotalDistance = Math.round(jagaCumDist * 10) / 10;
   const jagaTotalDurationMinutes = Math.round((jagaCumDist / 35) * 60);
@@ -629,11 +807,10 @@ export function calculateClientOptimization(payload: any): ComparisonData {
   const detourMinutes = Math.max(0, jagaTotalDurationMinutes - baseTotalDurationMinutes);
   const additionalLogisticsCost = Math.max(0, jagaLogisticsCost - baseLogisticsCost);
 
-  const totalVolumeKg = items.reduce((s: number, it: any) => s + it.volume_kg, 0);
+  const totalVolumeKg = items.reduce((s, it) => s + it.volume_kg, 0);
   const avgPrice =
     items.length > 0
-      ? items.reduce((s: number, it: any) => s + it.price_per_kg * it.volume_kg, 0) /
-        Math.max(1, totalVolumeKg)
+      ? items.reduce((s, it) => s + it.price_per_kg * it.volume_kg, 0) / Math.max(1, totalVolumeKg)
       : 15000;
   const riskDiff = Math.max(0, baseRiskScore - jagaRiskScore);
   const foodLossAvoidedKg = Math.round(totalVolumeKg * (riskDiff / 100) * 0.65);
@@ -698,7 +875,9 @@ export function calculateClientOptimization(payload: any): ComparisonData {
   };
 }
 
-export async function runDynamicScenario(payload: any): Promise<ComparisonData> {
+export async function runDynamicScenario(
+  payload: ClientOptimizationPayload,
+): Promise<ComparisonData> {
   const isLocalBackend =
     API_BASE_URL.includes("localhost") ||
     API_BASE_URL.includes("127.0.0.1") ||

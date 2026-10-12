@@ -33,7 +33,11 @@ export function FormulaDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 border-slate-200 text-xs text-zinc-700 whitespace-nowrap shrink-0">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 border-slate-200 text-xs text-zinc-700 whitespace-nowrap shrink-0"
+        >
           <Info className="mr-1.5 h-3.5 w-3.5 text-zinc-500 shrink-0" />
           <span className="hidden sm:inline">Transparansi Formula</span>
           <span className="sm:hidden">Formula</span>
@@ -69,14 +73,23 @@ export function FormulaDialog() {
           <div className="space-y-2">
             {[
               ["t_harvest", "Jam aktual sejak komoditas dipanen (data nyata, bukan prediksi)."],
-              ["t_transit", "Estimasi jam tempuh dari titik panen sampai pasar pada urutan rute tersebut."],
+              [
+                "t_transit",
+                "Estimasi jam tempuh dari titik panen sampai pasar pada urutan rute tersebut.",
+              ],
               ["ShelfLife", "Masa simpan komoditas dalam jam (Tomat 48, Cabai 96, Kentang 720)."],
               ["k_handling", "Faktor kelas kerentanan: A=1.6, B=1.3, C=1.1, D=1.0."],
               ["α (alpha)", "Bobot biaya perjalanan (BBM, jarak tempuh, operasional kendaraan)."],
               ["β (beta)", "Bobot biaya deviasi rute dari jalur terpendek."],
-              ["γ (gamma)", "Bobot risiko susut panen — semakin tinggi, semakin diprioritaskan komoditas rentan."],
+              [
+                "γ (gamma)",
+                "Bobot risiko susut panen — semakin tinggi, semakin diprioritaskan komoditas rentan.",
+              ],
             ].map(([k, v]) => (
-              <div key={k} className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3 border-b border-slate-100 pb-2 last:border-0">
+              <div
+                key={k}
+                className="flex flex-col sm:flex-row sm:items-start gap-1 sm:gap-3 border-b border-slate-100 pb-2 last:border-0"
+              >
                 <span className="w-28 shrink-0 font-mono text-[11px] sm:text-[12px] font-semibold text-emerald-700">
                   {k}
                 </span>
@@ -111,6 +124,16 @@ const COMMODITY_PRESETS = [
   { name: "Beras Medium", kelas: "E", shelf: 4320, price: 13500 },
 ];
 
+function firstCommodityPreset() {
+  const preset = COMMODITY_PRESETS[0];
+  if (!preset) {
+    throw new Error("COMMODITY_PRESETS must not be empty");
+  }
+  return preset;
+}
+
+const defaultCommodity = firstCommodityPreset();
+
 const COMMODITY_UUID_MAP: Record<string, string> = {
   Tomat: "aa734536-8c6d-478f-b53e-2d97485f7835",
   "Bayam (Sayur Daun)": "a683daaf-b319-4b44-992b-0186a61b0588",
@@ -139,16 +162,22 @@ export function AddHarvestDialog({
 }) {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [komoditas, setKomoditas] = useState(COMMODITY_PRESETS[0].name);
-  const [presetLocation, setPresetLocation] = useState(LOCATION_PRESETS[0] || "Titik A — Desa Sawangan");
+  const [komoditas, setKomoditas] = useState(defaultCommodity.name);
+  const [presetLocation, setPresetLocation] = useState(
+    LOCATION_PRESETS[0] || "Titik A — Desa Sawangan",
+  );
   const [customLocationName, setCustomLocationName] = useState("");
-  const [lat, setLat] = useState<number>(LOCATION_COORDINATES[LOCATION_PRESETS[0] || ""]?.[0] || DEFAULT_COORDINATE[0]);
-  const [lng, setLng] = useState<number>(LOCATION_COORDINATES[LOCATION_PRESETS[0] || ""]?.[1] || DEFAULT_COORDINATE[1]);
+  const [lat, setLat] = useState<number>(
+    LOCATION_COORDINATES[LOCATION_PRESETS[0] || ""]?.[0] || DEFAULT_COORDINATE[0],
+  );
+  const [lng, setLng] = useState<number>(
+    LOCATION_COORDINATES[LOCATION_PRESETS[0] || ""]?.[1] || DEFAULT_COORDINATE[1],
+  );
   const [volume, setVolume] = useState("300");
   const [jamSejakPanen, setJamSejakPanen] = useState("6");
-  const [shelfLife, setShelfLife] = useState(String(COMMODITY_PRESETS[0].shelf));
-  const [kelas, setKelas] = useState<Harvest["kelas"]>(COMMODITY_PRESETS[0].kelas as Harvest["kelas"]);
-  const [nilaiPerKg, setNilaiPerKg] = useState(String(COMMODITY_PRESETS[0].price));
+  const [shelfLife, setShelfLife] = useState(String(defaultCommodity.shelf));
+  const [kelas, setKelas] = useState<Harvest["kelas"]>(defaultCommodity.kelas as Harvest["kelas"]);
+  const [nilaiPerKg, setNilaiPerKg] = useState(String(defaultCommodity.price));
   const [initialCondition, setInitialCondition] = useState("fresh");
   const [destination, setDestination] = useState("Pasar Induk Caringin");
 
@@ -176,10 +205,12 @@ export function AddHarvestDialog({
   const submit = async () => {
     if (!komoditas || !volume) return;
     setIsSubmitting(true);
-    const finalLocation = presetLocation === "custom" ? customLocationName || "Lokasi Kustom" : presetLocation;
+    const finalLocation =
+      presetLocation === "custom" ? customLocationName || "Lokasi Kustom" : presetLocation;
     const hours = Number(jamSejakPanen) || 0;
     const shelf = Number(shelfLife) || 48;
-    const factor = initialCondition === "critical" ? 1.6 : initialCondition === "slightly_bruised" ? 1.3 : 1.0;
+    const factor =
+      initialCondition === "critical" ? 1.6 : initialCondition === "slightly_bruised" ? 1.3 : 1.0;
     const destCoord = DESTINATION_COORDINATES[destination] || { lat: -6.92, lng: 107.61 };
 
     const payload: HarvestCreatePayload = {
@@ -224,7 +255,7 @@ export function AddHarvestDialog({
       setOpen(false);
       setVolume("300");
       setJamSejakPanen("6");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.warn("Gagal menyimpan panen ke backend, beralih ke state lokal:", err);
       toast.info(`Mode lokal: Panen ${komoditas} (${volume} kg) ditambahkan ke antarmuka.`);
       onAdd?.(localHarvest);
@@ -239,7 +270,10 @@ export function AddHarvestDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button size="sm" className="h-8 bg-emerald-600 text-white hover:bg-emerald-700 whitespace-nowrap shrink-0">
+        <Button
+          size="sm"
+          className="h-8 bg-emerald-600 text-white hover:bg-emerald-700 whitespace-nowrap shrink-0"
+        >
           <Plus className="mr-1.5 h-3.5 w-3.5 shrink-0" />
           <span className="hidden sm:inline">Tambah Data Panen</span>
           <span className="sm:hidden">Tambah Panen</span>
@@ -249,7 +283,8 @@ export function AddHarvestDialog({
         <DialogHeader>
           <DialogTitle>Tambah Data Panen Aktual</DialogTitle>
           <DialogDescription className="text-xs">
-            Hanya hasil panen yang sudah siap kirim. Titik lokasi akan langsung disinkronkan ke peta.
+            Hanya hasil panen yang sudah siap kirim. Titik lokasi akan langsung disinkronkan ke
+            peta.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -276,9 +311,15 @@ export function AddHarvestDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="fresh" className="text-xs">Segar Prima (Faktor 1.0)</SelectItem>
-                <SelectItem value="slightly_bruised" className="text-xs">Memar Ringan (Faktor 1.3)</SelectItem>
-                <SelectItem value="critical" className="text-xs">Kritis / Sangat Matang (Faktor 1.6)</SelectItem>
+                <SelectItem value="fresh" className="text-xs">
+                  Segar Prima (Faktor 1.0)
+                </SelectItem>
+                <SelectItem value="slightly_bruised" className="text-xs">
+                  Memar Ringan (Faktor 1.3)
+                </SelectItem>
+                <SelectItem value="critical" className="text-xs">
+                  Kritis / Sangat Matang (Faktor 1.6)
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -331,15 +372,42 @@ export function AddHarvestDialog({
             <div className="col-span-1 sm:col-span-2 rounded border border-slate-100 bg-slate-50 px-3 py-1.5 text-[11px] text-zinc-600 flex items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
               <span className="truncate">
-                Koordinat Terpetakan: <code className="font-mono font-semibold">{lat}, {lng}</code>
+                Koordinat Terpetakan:{" "}
+                <code className="font-mono font-semibold">
+                  {lat}, {lng}
+                </code>
               </span>
             </div>
           )}
 
-          <Field label="Volume Muatan (kg)" type="number" value={volume} onChange={setVolume} placeholder="Misal: 300" />
-          <Field label="Waktu Petik (Jam Sejak Panen)" type="number" value={jamSejakPanen} onChange={setJamSejakPanen} placeholder="Misal: 6" />
-          <Field label="Masa Simpan L_i (jam)" type="number" value={shelfLife} onChange={setShelfLife} placeholder="Misal: 48" />
-          <Field label="Estimasi Nilai (Rp/kg)" type="number" value={nilaiPerKg} onChange={setNilaiPerKg} placeholder="Misal: 15000" />
+          <Field
+            label="Volume Muatan (kg)"
+            type="number"
+            value={volume}
+            onChange={setVolume}
+            placeholder="Misal: 300"
+          />
+          <Field
+            label="Waktu Petik (Jam Sejak Panen)"
+            type="number"
+            value={jamSejakPanen}
+            onChange={setJamSejakPanen}
+            placeholder="Misal: 6"
+          />
+          <Field
+            label="Masa Simpan L_i (jam)"
+            type="number"
+            value={shelfLife}
+            onChange={setShelfLife}
+            placeholder="Misal: 48"
+          />
+          <Field
+            label="Estimasi Nilai (Rp/kg)"
+            type="number"
+            value={nilaiPerKg}
+            onChange={setNilaiPerKg}
+            placeholder="Misal: 15000"
+          />
 
           <div className="col-span-1 sm:col-span-2 space-y-1.5">
             <Label className="text-xs text-zinc-600">Tujuan Distribusi (Pasar / Gudang)</Label>
@@ -348,9 +416,15 @@ export function AddHarvestDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Pasar Induk Caringin" className="text-xs">Pasar Induk Caringin (Bandung)</SelectItem>
-                <SelectItem value="Pasar Induk Giwangan" className="text-xs">Pasar Induk Giwangan (Yogyakarta)</SelectItem>
-                <SelectItem value="Gudang Sentra Koperasi" className="text-xs">Gudang Sentra Koperasi Tani</SelectItem>
+                <SelectItem value="Pasar Induk Caringin" className="text-xs">
+                  Pasar Induk Caringin (Bandung)
+                </SelectItem>
+                <SelectItem value="Pasar Induk Giwangan" className="text-xs">
+                  Pasar Induk Giwangan (Yogyakarta)
+                </SelectItem>
+                <SelectItem value="Gudang Sentra Koperasi" className="text-xs">
+                  Gudang Sentra Koperasi Tani
+                </SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -425,7 +499,8 @@ export function EditHarvestDialog({
 
   const submit = () => {
     if (!harvest || !komoditas || !volume) return;
-    const finalLocation = presetLocation === "custom" ? customLocationName || "Lokasi Kustom" : presetLocation;
+    const finalLocation =
+      presetLocation === "custom" ? customLocationName || "Lokasi Kustom" : presetLocation;
     const hours = Number(jamSejakPanen) || 0;
     const shelf = Number(shelfLife) || 48;
     const updated: Harvest = {
@@ -454,7 +529,8 @@ export function EditHarvestDialog({
         <DialogHeader>
           <DialogTitle>Edit Data Panen ({harvest.id})</DialogTitle>
           <DialogDescription className="text-xs">
-            Perbarui data komoditas atau ganti lokasi titik jemput panen. Peta akan otomatis menyesuaikan rute.
+            Perbarui data komoditas atau ganti lokasi titik jemput panen. Peta akan otomatis
+            menyesuaikan rute.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -505,13 +581,21 @@ export function EditHarvestDialog({
             <div className="col-span-1 sm:col-span-2 rounded border border-slate-100 bg-slate-50 px-3 py-1.5 text-[11px] text-zinc-600 flex items-center gap-1.5">
               <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
               <span className="truncate">
-                Koordinat Terpetakan: <code className="font-mono font-semibold">{lat}, {lng}</code>
+                Koordinat Terpetakan:{" "}
+                <code className="font-mono font-semibold">
+                  {lat}, {lng}
+                </code>
               </span>
             </div>
           )}
 
           <Field label="Volume (kg)" type="number" value={volume} onChange={setVolume} />
-          <Field label="Jam Sejak Panen" type="number" value={jamSejakPanen} onChange={setJamSejakPanen} />
+          <Field
+            label="Jam Sejak Panen"
+            type="number"
+            value={jamSejakPanen}
+            onChange={setJamSejakPanen}
+          />
           <Field label="Shelf Life (jam)" type="number" value={shelfLife} onChange={setShelfLife} />
           <Field label="Nilai (Rp/kg)" type="number" value={nilaiPerKg} onChange={setNilaiPerKg} />
 

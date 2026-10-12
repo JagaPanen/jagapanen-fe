@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, ExternalLink, HelpCircle, ShieldCheck, AlertCircle } from "lucide-react";
+import { BookOpen, ExternalLink, ShieldCheck, AlertCircle } from "lucide-react";
 import { getCommodities, type Commodity } from "@/services/api";
 
 const CLASS_COLORS: Record<string, string> = {
@@ -20,27 +20,116 @@ const CLASS_COLORS: Record<string, string> = {
   E: "bg-blue-100 text-blue-800 border-blue-200",
 };
 
+function CommodityRow({ commodity }: { commodity: Commodity }) {
+  const perishabilityClass = commodity.perishability_class || "-";
+  const classColor = CLASS_COLORS[perishabilityClass] || "bg-slate-100";
+
+  return (
+    <tr className="hover:bg-slate-50/70">
+      <td className="p-2.5">
+        <div className="font-semibold text-zinc-900">{commodity.name || "Tanpa nama"}</div>
+        <div className="text-[10px] text-zinc-400">
+          {commodity.commodity_group || "Hortikultura"}
+        </div>
+      </td>
+      <td className="p-2.5">
+        <span
+          className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border ${classColor}`}
+        >
+          Kelas {perishabilityClass}
+        </span>
+      </td>
+      <td className="p-2.5">
+        <span className="font-medium text-zinc-800">{commodity.shelf_life_hours ?? 0} jam</span>
+        {commodity.effective_quality_window_hours != null && (
+          <span className="block text-[10px] text-zinc-500">
+            Jendela Mutu: {commodity.effective_quality_window_hours} jam
+          </span>
+        )}
+      </td>
+      <td className="p-2.5">
+        <span className="font-semibold text-rose-700">{commodity.max_transit_hours || 12} jam</span>
+      </td>
+      <td className="p-2.5 text-[11px] text-zinc-600 max-w-[200px]">
+        <div>{commodity.special_handling || "Standar ambient"}</div>
+        {commodity.storage_condition && (
+          <div className="text-[10px] text-zinc-400 mt-0.5">{commodity.storage_condition}</div>
+        )}
+      </td>
+      <td className="p-2.5">
+        {commodity.is_assumption ? (
+          <div className="space-y-1">
+            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200">
+              <AlertCircle className="h-3 w-3" /> [ASSUMPTION]
+            </span>
+            <div className="text-[10px] text-zinc-500">
+              {commodity.source_title || "Estimasi Koperasi"}
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-0.5">
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700">
+              <ShieldCheck className="h-3 w-3" /> Validated ({commodity.confidence || "high"})
+            </span>
+            <div className="text-[10px] text-zinc-700 line-clamp-1" title={commodity.source_title}>
+              {commodity.source_title || "Sumber tidak tercatat"}{" "}
+              {commodity.source_year ? `(${commodity.source_year})` : ""}
+            </div>
+            {commodity.source_url && (
+              <a
+                href={commodity.source_url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center gap-0.5 text-[10px] text-blue-600 hover:underline"
+              >
+                Tautan Dokumen <ExternalLink className="h-2.5 w-2.5" />
+              </a>
+            )}
+          </div>
+        )}
+      </td>
+    </tr>
+  );
+}
+
 export function CommodityAdminDialog() {
   const [commodities, setCommodities] = useState<Commodity[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let cancelled = false;
+
     async function load() {
       setLoading(true);
+      setError(null);
       try {
         const data = await getCommodities();
-        setCommodities(data);
+        if (!cancelled) setCommodities(Array.isArray(data) ? data : []);
+      } catch (err) {
+        if (!cancelled) {
+          setCommodities([]);
+          setError(err instanceof Error ? err.message : "Gagal memuat katalog komoditas");
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     }
+
     load();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline" size="sm" className="h-8 border-slate-200 text-xs text-zinc-700 whitespace-nowrap shrink-0">
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-8 border-slate-200 text-xs text-zinc-700 whitespace-nowrap shrink-0"
+        >
           <BookOpen className="mr-1.5 h-3.5 w-3.5 text-emerald-600 shrink-0" />
           <span className="hidden sm:inline">Database Parameter Komoditas</span>
           <span className="sm:hidden">Parameter Komoditas</span>
@@ -55,13 +144,20 @@ export function CommodityAdminDialog() {
             </Badge>
           </DialogTitle>
           <DialogDescription className="text-xs">
-            Seluruh ambang batas mutu berbasis literatur ilmiah (FAO, USDA, Kementan RI) atau ditandai eksplisit sebagai{" "}
+            Seluruh ambang batas mutu berbasis literatur ilmiah (FAO, USDA, Kementan RI) atau
+            ditandai eksplisit sebagai{" "}
             <span className="font-semibold text-amber-700 bg-amber-50 px-1 py-0.5 rounded border border-amber-200">
               [ASSUMPTION]
             </span>{" "}
             untuk transparansi penuh.
           </DialogDescription>
         </DialogHeader>
+
+        {error && (
+          <p className="mt-3 text-xs text-rose-700 bg-rose-50 border border-rose-200 rounded-md px-3 py-2">
+            {error}
+          </p>
+        )}
 
         <div className="mt-3 w-full overflow-x-auto border border-slate-200 rounded-lg [scrollbar-width:thin]">
           <table className="w-full min-w-[650px] text-left text-xs">
@@ -76,69 +172,23 @@ export function CommodityAdminDialog() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {commodities.map((c) => (
-                <tr key={c.id || c.name} className="hover:bg-slate-50/70">
-                  <td className="p-2.5">
-                    <div className="font-semibold text-zinc-900">{c.name}</div>
-                    <div className="text-[10px] text-zinc-400">{c.commodity_group || "Hortikultura"}</div>
-                  </td>
-                  <td className="p-2.5">
-                    <span
-                      className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold border ${
-                        CLASS_COLORS[c.perishability_class] || "bg-slate-100"
-                      }`}
-                    >
-                      Kelas {c.perishability_class}
-                    </span>
-                  </td>
-                  <td className="p-2.5">
-                    <span className="font-medium text-zinc-800">{c.shelf_life_hours} jam</span>
-                    {c.effective_quality_window_hours && (
-                      <span className="block text-[10px] text-zinc-500">
-                        Jendela Mutu: {c.effective_quality_window_hours} jam
-                      </span>
-                    )}
-                  </td>
-                  <td className="p-2.5">
-                    <span className="font-semibold text-rose-700">{c.max_transit_hours || 12} jam</span>
-                  </td>
-                  <td className="p-2.5 text-[11px] text-zinc-600 max-w-[200px]">
-                    <div>{c.special_handling || "Standar ambient"}</div>
-                    {c.storage_condition && (
-                      <div className="text-[10px] text-zinc-400 mt-0.5">{c.storage_condition}</div>
-                    )}
-                  </td>
-                  <td className="p-2.5">
-                    {c.is_assumption ? (
-                      <div className="space-y-1">
-                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200">
-                          <AlertCircle className="h-3 w-3" /> [ASSUMPTION]
-                        </span>
-                        <div className="text-[10px] text-zinc-500">{c.source_title || "Estimasi Koperasi"}</div>
-                      </div>
-                    ) : (
-                      <div className="space-y-0.5">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700">
-                          <ShieldCheck className="h-3 w-3" /> Validated ({c.confidence || "high"})
-                        </span>
-                        <div className="text-[10px] text-zinc-700 line-clamp-1" title={c.source_title}>
-                          {c.source_title} {c.source_year ? `(${c.source_year})` : ""}
-                        </div>
-                        {c.source_url && (
-                          <a
-                            href={c.source_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-0.5 text-[10px] text-blue-600 hover:underline"
-                          >
-                            Tautan Dokumen <ExternalLink className="h-2.5 w-2.5" />
-                          </a>
-                        )}
-                      </div>
-                    )}
+              {loading ? (
+                <tr>
+                  <td colSpan={6} className="p-4 text-center text-zinc-500">
+                    Memuat katalog...
                   </td>
                 </tr>
-              ))}
+              ) : commodities.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="p-4 text-center text-zinc-500">
+                    Katalog komoditas kosong.
+                  </td>
+                </tr>
+              ) : (
+                commodities.map((commodity) => (
+                  <CommodityRow key={commodity.id || commodity.name} commodity={commodity} />
+                ))
+              )}
             </tbody>
           </table>
         </div>

@@ -147,11 +147,17 @@ export function HarvestTable({
                     </td>
                     <td className="px-4 py-2">
                       {critical ? (
-                        <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100">Kritis</Badge>
+                        <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100">
+                          Kritis
+                        </Badge>
                       ) : warn ? (
-                        <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">Perhatian</Badge>
+                        <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
+                          Perhatian
+                        </Badge>
                       ) : (
-                        <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">Aman</Badge>
+                        <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
+                          Aman
+                        </Badge>
                       )}
                     </td>
                     <td className="px-4 py-2">

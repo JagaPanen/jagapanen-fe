@@ -25,6 +25,7 @@ function NotFoundComponent() {
         <div className="mt-6">
           <Link
             to="/"
+            search={{ tab: "comparison" }}
             className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             Go home
@@ -79,10 +80,16 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1.0" },
       { title: "JagaPanen" },
-      { name: "description", content: "JagaPanen — Post-Harvest Logistics Orchestration and Decision Intelligence" },
+      {
+        name: "description",
+        content: "JagaPanen — Post-Harvest Logistics Orchestration and Decision Intelligence",
+      },
       { name: "author", content: "JagaPanen" },
       { property: "og:title", content: "JagaPanen" },
-      { property: "og:description", content: "JagaPanen — Post-Harvest Logistics Orchestration and Decision Intelligence" },
+      {
+        property: "og:description",
+        content: "JagaPanen — Post-Harvest Logistics Orchestration and Decision Intelligence",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
       { name: "twitter:site", content: "@JagaPanen" },

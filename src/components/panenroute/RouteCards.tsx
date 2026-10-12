@@ -1,14 +1,30 @@
 import { useMemo } from "react";
-import { ROUTES, SCENARIOS, getRouteSequenceForMode, rupiah, type Harvest, type Mode } from "./data";
+import {
+  ROUTES,
+  SCENARIOS,
+  getRouteSequenceForMode,
+  rupiah,
+  type Harvest,
+  type Mode,
+} from "./data";
 import { Badge } from "@/components/ui/badge";
-import { ArrowRight, AlertTriangle, CheckCircle2, Clock, Route as RouteIcon, Fuel } from "lucide-react";
+import {
+  ArrowRight,
+  AlertTriangle,
+  CheckCircle2,
+  Clock,
+  Route as RouteIcon,
+  Fuel,
+} from "lucide-react";
 
 function Sequence({ seq }: { seq: string[] }) {
   return (
     <div className="flex flex-wrap items-center gap-1 text-[11px] text-zinc-600">
       {seq.map((s, i) => (
         <span key={s + i} className="flex items-center gap-1">
-          <span className="rounded bg-slate-100 px-1.5 py-0.5 font-medium text-zinc-700 max-w-[220px] truncate">{s}</span>
+          <span className="rounded bg-slate-100 px-1.5 py-0.5 font-medium text-zinc-700 max-w-[220px] truncate">
+            {s}
+          </span>
           {i < seq.length - 1 && <ArrowRight className="h-3 w-3 text-zinc-400 shrink-0" />}
         </span>
       ))}
@@ -199,7 +215,11 @@ export function RouteCards({
           <div
             className={
               "h-1.5 rounded-full " +
-              (isBalancedActive ? "bg-amber-500" : isSpoilageActive ? "bg-emerald-600" : "bg-zinc-400")
+              (isBalancedActive
+                ? "bg-amber-500"
+                : isSpoilageActive
+                  ? "bg-emerald-600"
+                  : "bg-zinc-400")
             }
             style={{ width: `${r.risk}%` }}
           />

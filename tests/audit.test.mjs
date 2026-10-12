@@ -40,32 +40,54 @@ try {
   assert(fs.existsSync(ssrPath), "dist/server/_ssr/ssr.mjs must exist");
   const ssrModule = await import(`file://${ssrPath.replace(/\\/g, "/")}`);
   const server = ssrModule.default;
-  assert(server && typeof server.fetch === "function", "Nitro server entry must export default.fetch");
+  assert(
+    server && typeof server.fetch === "function",
+    "Nitro server entry must export default.fetch",
+  );
 
   // 1.1 GET /api/commodities
   try {
-    const req = new Request("http://localhost:3000/api/commodities?active_only=true", { method: "GET" });
+    const req = new Request("http://localhost:3000/api/commodities?active_only=true", {
+      method: "GET",
+    });
     const res = await server.fetch(req, {}, {});
     assert.equal(res.status, 200, "Expected status 200 for /api/commodities");
     assert.equal(res.headers.get("access-control-allow-origin"), "*", "Expected CORS header *");
     const commodities = await res.json();
-    assert(Array.isArray(commodities) && commodities.length > 0, "Commodities should be non-empty array");
-    const tomato = commodities.find((c) => c.name.toLowerCase().includes("tomato") || c.name.toLowerCase().includes("tomat"));
+    assert(
+      Array.isArray(commodities) && commodities.length > 0,
+      "Commodities should be non-empty array",
+    );
+    const tomato = commodities.find(
+      (c) => c.name.toLowerCase().includes("tomato") || c.name.toLowerCase().includes("tomat"),
+    );
     assert(tomato, "Tomato commodity should be present in catalog");
-    recordResult("Proxy & Health", "GET /api/commodities (Status 200, CORS, Valid Catalog)", true, `${commodities.length} items`);
+    recordResult(
+      "Proxy & Health",
+      "GET /api/commodities (Status 200, CORS, Valid Catalog)",
+      true,
+      `${commodities.length} items`,
+    );
   } catch (err) {
     recordResult("Proxy & Health", "GET /api/commodities", false, err.message);
   }
 
   // 1.2 GET /api/vehicles
   try {
-    const req = new Request("http://localhost:3000/api/vehicles?active_only=true", { method: "GET" });
+    const req = new Request("http://localhost:3000/api/vehicles?active_only=true", {
+      method: "GET",
+    });
     const res = await server.fetch(req, {}, {});
     assert.equal(res.status, 200, "Expected status 200 for /api/vehicles");
     assert.equal(res.headers.get("access-control-allow-origin"), "*", "Expected CORS header *");
     const vehicles = await res.json();
     assert(Array.isArray(vehicles) && vehicles.length > 0, "Vehicles should be non-empty array");
-    recordResult("Proxy & Health", "GET /api/vehicles (Status 200, CORS, Valid Fleet)", true, `${vehicles.length} vehicles`);
+    recordResult(
+      "Proxy & Health",
+      "GET /api/vehicles (Status 200, CORS, Valid Fleet)",
+      true,
+      `${vehicles.length} vehicles`,
+    );
   } catch (err) {
     recordResult("Proxy & Health", "GET /api/vehicles", false, err.message);
   }
@@ -78,7 +100,12 @@ try {
     assert.equal(res.headers.get("access-control-allow-origin"), "*", "Expected CORS header *");
     const health = await res.json();
     assert(health.status === "healthy" || health.status === "ok", "Expected healthy status");
-    recordResult("Proxy & Health", "GET /api/health (Status 200, Healthy status)", true, health.status);
+    recordResult(
+      "Proxy & Health",
+      "GET /api/health (Status 200, Healthy status)",
+      true,
+      health.status,
+    );
   } catch (err) {
     recordResult("Proxy & Health", "GET /api/health", false, err.message);
   }
@@ -99,7 +126,10 @@ try {
     const res = await server.fetch(req, {}, {});
     assert.equal(res.status, 204, "Expected status 204 for OPTIONS preflight");
     assert.equal(res.headers.get("access-control-allow-origin"), "*", "CORS allow-origin *");
-    assert(res.headers.get("access-control-allow-methods").includes("POST"), "CORS allow-methods should include POST");
+    assert(
+      res.headers.get("access-control-allow-methods").includes("POST"),
+      "CORS allow-methods should include POST",
+    );
     recordResult("Proxy & Health", "OPTIONS CORS Preflight (Status 204 No Content)", true);
   } catch (err) {
     recordResult("Proxy & Health", "OPTIONS CORS Preflight", false, err.message);
@@ -138,7 +168,7 @@ const VEHICLE_MAX_CAPACITY = 1000; // Mitsubishi L300 capacity (kg)
       "Capacity Guardrails",
       "Overload Detection (>1000 kg)",
       true,
-      `1100 kg > 1000 kg -> Warning Banner Active & Button Locked`
+      `1100 kg > 1000 kg -> Warning Banner Active & Button Locked`,
     );
   } catch (err) {
     recordResult("Capacity Guardrails", "Overload Detection (>1000 kg)", false, err.message);
@@ -165,7 +195,7 @@ const VEHICLE_MAX_CAPACITY = 1000; // Mitsubishi L300 capacity (kg)
       "Capacity Guardrails",
       "Normal Load Recovery (<=1000 kg)",
       true,
-      `900 kg <= 1000 kg -> Warning Banner Dismissed & Button Unlocked`
+      `900 kg <= 1000 kg -> Warning Banner Dismissed & Button Unlocked`,
     );
   } catch (err) {
     recordResult("Capacity Guardrails", "Normal Load Recovery (<=1000 kg)", false, err.message);
@@ -177,7 +207,11 @@ const VEHICLE_MAX_CAPACITY = 1000; // Mitsubishi L300 capacity (kg)
   try {
     assert.equal(1000 > VEHICLE_MAX_CAPACITY, false, "1000 kg exactly should be permissible");
     assert.equal(1001 > VEHICLE_MAX_CAPACITY, true, "1001 kg should immediately trigger overload");
-    recordResult("Capacity Guardrails", "Boundary Value Tests (1000 kg permissible vs 1001 kg locked)", true);
+    recordResult(
+      "Capacity Guardrails",
+      "Boundary Value Tests (1000 kg permissible vs 1001 kg locked)",
+      true,
+    );
   } catch (err) {
     recordResult("Capacity Guardrails", "Boundary Value Tests", false, err.message);
   }
@@ -225,16 +259,20 @@ function calculateOptimization(payload) {
 
   const items = rawHarvests.map((h, idx) => {
     const pClass = (h.perishability_class || h.kelas || "C").toUpperCase();
-    const shelfLife = Number(h.shelf_life_hours || h.shelfLife || (pClass === "A" ? 48 : pClass === "B" ? 96 : 168));
+    const shelfLife = Number(
+      h.shelf_life_hours || h.shelfLife || (pClass === "A" ? 48 : pClass === "B" ? 96 : 168),
+    );
     const hoursSince = Number(h.hours_since_harvest ?? h.jamSejakPanen ?? 8);
     const qty = Number(h.quantity_kg || h.volume || 100);
     const price = Number(h.price_per_kg || h.nilaiPerKg || 15000);
     const lat = Number(h.location?.lat ?? h.lat ?? -7.5);
     const lng = Number(h.location?.lng ?? h.lng ?? 110.3);
-    const label = h.label || `${h.commodity || "Komoditas"} (${h.location?.name || `Titik ${idx + 1}`})`;
+    const label =
+      h.label || `${h.commodity || "Komoditas"} (${h.location?.name || `Titik ${idx + 1}`})`;
     const commName = h.commodity_name || h.commodity || h.komoditas || "Komoditas";
 
-    const classWeight = pClass === "A" ? 100 : pClass === "B" ? 70 : pClass === "C" ? 40 : pClass === "D" ? 10 : 5;
+    const classWeight =
+      pClass === "A" ? 100 : pClass === "B" ? 70 : pClass === "C" ? 40 : pClass === "D" ? 10 : 5;
     const urgency = classWeight + Math.min(50, (hoursSince / Math.max(1, shelfLife)) * 50);
 
     return {
@@ -275,7 +313,8 @@ function calculateOptimization(payload) {
     const etaMinutes = Math.round((baseCumDist / 35) * 60);
     const hoursLeft = Math.max(
       0,
-      Math.round((picked.shelf_life_hours - (picked.hours_since_harvest + etaMinutes / 60)) * 10) / 10
+      Math.round((picked.shelf_life_hours - (picked.hours_since_harvest + etaMinutes / 60)) * 10) /
+        10,
     );
     const isViolation =
       (picked.perishability_class === "A" && (order >= 3 || hoursLeft < 35)) ||
@@ -303,7 +342,10 @@ function calculateOptimization(payload) {
   const baseTotalDurationMinutes = Math.round((baseCumDist / 35) * 60);
   const baseLogisticsCost = Math.round(baseTotalDistance * costPerKm);
   const baseViolations = baseStops.filter((s) => s.violation).length;
-  const baseRiskScore = Math.min(95, Math.max(50, 48 + baseViolations * 16 + Math.round(baseStops.length * 3)));
+  const baseRiskScore = Math.min(
+    95,
+    Math.max(50, 48 + baseViolations * 16 + Math.round(baseStops.length * 3)),
+  );
 
   // JagaPanen
   const unvisitedJaga = [...items].sort((a, b) => b.urgency - a.urgency);
@@ -319,7 +361,8 @@ function calculateOptimization(payload) {
     const etaMinutes = Math.round((jagaCumDist / 35) * 60);
     const hoursLeft = Math.max(
       0,
-      Math.round((picked.shelf_life_hours - (picked.hours_since_harvest + etaMinutes / 60)) * 10) / 10
+      Math.round((picked.shelf_life_hours - (picked.hours_since_harvest + etaMinutes / 60)) * 10) /
+        10,
     );
 
     jagaStops.push({
@@ -497,11 +540,15 @@ function buildPayloadFromHarvests(harvests) {
   const payload = buildPayloadFromHarvests(stateHarvests);
 
   try {
-    assert.equal(payload.harvests.length, 2, "Payload should have exactly 2 harvests after deletion");
+    assert.equal(
+      payload.harvests.length,
+      2,
+      "Payload should have exactly 2 harvests after deletion",
+    );
     assert.equal(
       payload.harvests.some((h) => h.id === "HRV-003"),
       false,
-      "Deleted harvest HRV-003 must NOT be present in payload"
+      "Deleted harvest HRV-003 must NOT be present in payload",
     );
     assert.equal(payload.harvests[0].id, "HRV-001");
     assert.equal(payload.harvests[1].id, "HRV-002");
@@ -509,7 +556,7 @@ function buildPayloadFromHarvests(harvests) {
       "Dynamic Table Binding",
       "Table Row Deletion Sync",
       true,
-      "Deleted HRV-003 -> Payload successfully pruned to 2 items"
+      "Deleted HRV-003 -> Payload successfully pruned to 2 items",
     );
   } catch (err) {
     recordResult("Dynamic Table Binding", "Table Row Deletion Sync", false, err.message);
@@ -546,7 +593,7 @@ function buildPayloadFromHarvests(harvests) {
       "Dynamic Table Binding",
       "Table Row Addition Sync",
       true,
-      "Added HRV-NEW (Bayam 150kg) -> Payload carries all fields"
+      "Added HRV-NEW (Bayam 150kg) -> Payload carries all fields",
     );
   } catch (err) {
     recordResult("Dynamic Table Binding", "Table Row Addition Sync", false, err.message);
@@ -561,7 +608,12 @@ function buildPayloadFromHarvests(harvests) {
   try {
     const updated = payload.harvests.find((h) => h.id === "HRV-001");
     assert.equal(updated.quantity_kg, 250, "Updated volume must be reflected in payload");
-    recordResult("Dynamic Table Binding", "Table Row Edit/Update Sync", true, "HRV-001 volume updated to 250 kg");
+    recordResult(
+      "Dynamic Table Binding",
+      "Table Row Edit/Update Sync",
+      true,
+      "HRV-001 volume updated to 250 kg",
+    );
   } catch (err) {
     recordResult("Dynamic Table Binding", "Table Row Edit/Update Sync", false, err.message);
   }
@@ -584,7 +636,12 @@ console.log(">>> MODULE 4: Solver Execution & Reactive Metric Update");
     assert(Array.isArray(result.jagaPanen.stops), "jagaPanen stops must be an array");
     assert(Array.isArray(result.baseline.stops), "baseline stops must be an array");
     assert.equal(result.jagaPanen.stops.length, 3, "Stops count must match harvests count (3)");
-    recordResult("Solver Execution", "Result Data Contract", true, "3 stops, valid baseline & jagaPanen models");
+    recordResult(
+      "Solver Execution",
+      "Result Data Contract",
+      true,
+      "3 stops, valid baseline & jagaPanen models",
+    );
   } catch (err) {
     recordResult("Solver Execution", "Result Data Contract", false, err.message);
   }
@@ -599,24 +656,24 @@ console.log(">>> MODULE 4: Solver Execution & Reactive Metric Update");
     assert.equal(
       jagaStop1.perishability_class,
       "A",
-      "First stop in JagaPanen MUST be a Class A highly perishable commodity"
+      "First stop in JagaPanen MUST be a Class A highly perishable commodity",
     );
     assert.equal(
       jagaStop2.perishability_class,
       "A",
-      "Second stop in JagaPanen MUST be a Class A highly perishable commodity"
+      "Second stop in JagaPanen MUST be a Class A highly perishable commodity",
     );
     assert.equal(
       jagaStop3.perishability_class,
       "B",
-      "Third stop in JagaPanen should be Class B (Cabai Rawit)"
+      "Third stop in JagaPanen should be Class B (Cabai Rawit)",
     );
 
     recordResult(
       "Solver Execution",
       "Spoilage-Aware Route Prioritization",
       true,
-      `Stop 1: ${jagaStop1.commodity_name} (Class ${jagaStop1.perishability_class}) -> Stop 2: ${jagaStop2.commodity_name} -> Stop 3: ${jagaStop3.commodity_name}`
+      `Stop 1: ${jagaStop1.commodity_name} (Class ${jagaStop1.perishability_class}) -> Stop 2: ${jagaStop2.commodity_name} -> Stop 3: ${jagaStop3.commodity_name}`,
     );
   } catch (err) {
     recordResult("Solver Execution", "Spoilage-Aware Route Prioritization", false, err.message);
@@ -624,24 +681,31 @@ console.log(">>> MODULE 4: Solver Execution & Reactive Metric Update");
 
   // 4.3 Quantitative Impact Calculator
   try {
-    const { food_loss_avoided_kg, economic_loss_avoided_idr, additional_logistics_cost_idr, net_retained_margin_idr } =
-      result.jagaPanen;
+    const {
+      food_loss_avoided_kg,
+      economic_loss_avoided_idr,
+      additional_logistics_cost_idr,
+      net_retained_margin_idr,
+    } = result.jagaPanen;
 
     assert(food_loss_avoided_kg > 0, `Food Loss Avoided (${food_loss_avoided_kg} kg) must be > 0`);
-    assert(economic_loss_avoided_idr > 0, `Economic Loss Avoided (Rp ${economic_loss_avoided_idr}) must be > 0`);
+    assert(
+      economic_loss_avoided_idr > 0,
+      `Economic Loss Avoided (Rp ${economic_loss_avoided_idr}) must be > 0`,
+    );
     assert(additional_logistics_cost_idr >= 0, `Additional Logistics Cost must be >= 0`);
     assert(net_retained_margin_idr > 0, `Net Retained Margin must be > 0`);
     assert.equal(
       net_retained_margin_idr,
       economic_loss_avoided_idr - additional_logistics_cost_idr,
-      "Net Retained Margin must equal Economic Loss Avoided minus Additional Logistics Cost"
+      "Net Retained Margin must equal Economic Loss Avoided minus Additional Logistics Cost",
     );
 
     recordResult(
       "Solver Execution",
       "Impact Calculator Metrics Verification",
       true,
-      `Food Loss Avoided: +${food_loss_avoided_kg} kg, Economic Value: Rp ${economic_loss_avoided_idr.toLocaleString("id-ID")}, Net Retained Margin: Rp ${net_retained_margin_idr.toLocaleString("id-ID")}`
+      `Food Loss Avoided: +${food_loss_avoided_kg} kg, Economic Value: Rp ${economic_loss_avoided_idr.toLocaleString("id-ID")}, Net Retained Margin: Rp ${net_retained_margin_idr.toLocaleString("id-ID")}`,
     );
   } catch (err) {
     recordResult("Solver Execution", "Impact Calculator Metrics Verification", false, err.message);
@@ -649,20 +713,39 @@ console.log(">>> MODULE 4: Solver Execution & Reactive Metric Update");
 
   // 4.4 Quality Violations & Explainability
   try {
-    assert.equal(result.jagaPanen.quality_violations_count, 0, "JagaPanen must have 0 quality violations");
-    assert(result.jagaPanen.explainability_reasons.length >= 3, "Explainability reasons must have at least 3 points");
-    const mentionsDetourOrUrgency = result.jagaPanen.explainability_reasons.some(
-      (r) => r.includes("prioritas") || r.includes("diprioritaskan") || r.includes("Detour") || r.includes("mutu")
+    assert.equal(
+      result.jagaPanen.quality_violations_count,
+      0,
+      "JagaPanen must have 0 quality violations",
     );
-    assert(mentionsDetourOrUrgency, "Explainability reasons must articulate quality priority / detour trade-off");
+    assert(
+      result.jagaPanen.explainability_reasons.length >= 3,
+      "Explainability reasons must have at least 3 points",
+    );
+    const mentionsDetourOrUrgency = result.jagaPanen.explainability_reasons.some(
+      (r) =>
+        r.includes("prioritas") ||
+        r.includes("diprioritaskan") ||
+        r.includes("Detour") ||
+        r.includes("mutu"),
+    );
+    assert(
+      mentionsDetourOrUrgency,
+      "Explainability reasons must articulate quality priority / detour trade-off",
+    );
     recordResult(
       "Solver Execution",
       "Algorithmic Explainability & Quality Protection",
       true,
-      `0 quality violations, ${result.jagaPanen.explainability_reasons.length} explainability notes`
+      `0 quality violations, ${result.jagaPanen.explainability_reasons.length} explainability notes`,
     );
   } catch (err) {
-    recordResult("Solver Execution", "Algorithmic Explainability & Quality Protection", false, err.message);
+    recordResult(
+      "Solver Execution",
+      "Algorithmic Explainability & Quality Protection",
+      false,
+      err.message,
+    );
   }
 }
 
@@ -676,43 +759,104 @@ console.log(">>> MODULE 5: Cross-Device Layout & Horizontal Overflow Audit");
 // 5.1 Root Container & Viewport Meta Check
 try {
   const rootFile = fs.readFileSync(path.resolve(rootDir, "src/routes/__root.tsx"), "utf-8");
-  assert(rootFile.includes('name: "viewport", content: "width=device-width, initial-scale=1.0"'), "Viewport meta tag configured");
-  assert(rootFile.includes('overflow-x-hidden'), "Root shell contains overflow-x-hidden");
-  recordResult("Cross-Device Layout", "Viewport Meta & Global Overflow Prevention", true, "overflow-x-hidden on html & body");
+  assert(
+    rootFile.includes('name: "viewport", content: "width=device-width, initial-scale=1.0"'),
+    "Viewport meta tag configured",
+  );
+  assert(rootFile.includes("overflow-x-hidden"), "Root shell contains overflow-x-hidden");
+  recordResult(
+    "Cross-Device Layout",
+    "Viewport Meta & Global Overflow Prevention",
+    true,
+    "overflow-x-hidden on html & body",
+  );
 } catch (err) {
-  recordResult("Cross-Device Layout", "Viewport Meta & Global Overflow Prevention", false, err.message);
+  recordResult(
+    "Cross-Device Layout",
+    "Viewport Meta & Global Overflow Prevention",
+    false,
+    err.message,
+  );
 }
 
 // 5.2 Breakpoint CSS classes in Main Page (375px mobile, 768px tablet, 1280px desktop)
 try {
   const indexFile = fs.readFileSync(path.resolve(rootDir, "src/routes/index.tsx"), "utf-8");
   assert(indexFile.includes("overflow-x-hidden"), "Page root has overflow-x-hidden");
-  assert(indexFile.includes("flex-col sm:flex-row"), "Header adapts between mobile column and sm:flex-row");
+  assert(
+    indexFile.includes("flex-col sm:flex-row"),
+    "Header adapts between mobile column and sm:flex-row",
+  );
   assert(indexFile.includes("w-full max-w-[1600px]"), "Maximum desktop width bounded to 1600px");
-  recordResult("Cross-Device Layout", "Breakpoint Layout Adaptability (index.tsx)", true, "Mobile flex-col to sm:flex-row");
+  recordResult(
+    "Cross-Device Layout",
+    "Breakpoint Layout Adaptability (index.tsx)",
+    true,
+    "Mobile flex-col to sm:flex-row",
+  );
 } catch (err) {
-  recordResult("Cross-Device Layout", "Breakpoint Layout Adaptability (index.tsx)", false, err.message);
+  recordResult(
+    "Cross-Device Layout",
+    "Breakpoint Layout Adaptability (index.tsx)",
+    false,
+    err.message,
+  );
 }
 
 // 5.3 HarvestTable Horizontal Scroll Containment (375px)
 try {
-  const tableFile = fs.readFileSync(path.resolve(rootDir, "src/components/panenroute/HarvestTable.tsx"), "utf-8");
+  const tableFile = fs.readFileSync(
+    path.resolve(rootDir, "src/components/panenroute/HarvestTable.tsx"),
+    "utf-8",
+  );
   assert(tableFile.includes("overflow-x-auto"), "Table wrapper has overflow-x-auto");
   assert(tableFile.includes("min-w-[760px]"), "Table min-width contained inside overflow wrapper");
-  recordResult("Cross-Device Layout", "Table Horizontal Scroll Containment (375px Mobile)", true, "Scrolls cleanly without viewport spilling");
+  recordResult(
+    "Cross-Device Layout",
+    "Table Horizontal Scroll Containment (375px Mobile)",
+    true,
+    "Scrolls cleanly without viewport spilling",
+  );
 } catch (err) {
-  recordResult("Cross-Device Layout", "Table Horizontal Scroll Containment (375px Mobile)", false, err.message);
+  recordResult(
+    "Cross-Device Layout",
+    "Table Horizontal Scroll Containment (375px Mobile)",
+    false,
+    err.message,
+  );
 }
 
 // 5.4 ComparisonView Responsive Grids (375px / 768px / 1280px)
 try {
-  const compFile = fs.readFileSync(path.resolve(rootDir, "src/components/panenroute/ComparisonView.tsx"), "utf-8");
-  assert(compFile.includes("grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"), "Impact cards use 1 col (375px) -> 2 cols (768px) -> 4 cols (1280px)");
-  assert(compFile.includes("grid-cols-1 lg:grid-cols-2"), "Comparison columns stack on mobile (1 col) and split on desktop (2 cols)");
-  assert(compFile.includes("truncate") && compFile.includes("min-w-0"), "Text truncation and min-w-0 guardrails applied to metric values");
-  recordResult("Cross-Device Layout", "Multi-Breakpoint Grid Hierarchy (ComparisonView)", true, "1 col (mobile) -> 2 cols (tablet) -> 4 cols (desktop)");
+  const compFile = fs.readFileSync(
+    path.resolve(rootDir, "src/components/panenroute/ComparisonView.tsx"),
+    "utf-8",
+  );
+  assert(
+    compFile.includes("grid-cols-1 sm:grid-cols-2 lg:grid-cols-4"),
+    "Impact cards use 1 col (375px) -> 2 cols (768px) -> 4 cols (1280px)",
+  );
+  assert(
+    compFile.includes("grid-cols-1 lg:grid-cols-2"),
+    "Comparison columns stack on mobile (1 col) and split on desktop (2 cols)",
+  );
+  assert(
+    compFile.includes("truncate") && compFile.includes("min-w-0"),
+    "Text truncation and min-w-0 guardrails applied to metric values",
+  );
+  recordResult(
+    "Cross-Device Layout",
+    "Multi-Breakpoint Grid Hierarchy (ComparisonView)",
+    true,
+    "1 col (mobile) -> 2 cols (tablet) -> 4 cols (desktop)",
+  );
 } catch (err) {
-  recordResult("Cross-Device Layout", "Multi-Breakpoint Grid Hierarchy (ComparisonView)", false, err.message);
+  recordResult(
+    "Cross-Device Layout",
+    "Multi-Breakpoint Grid Hierarchy (ComparisonView)",
+    false,
+    err.message,
+  );
 }
 
 console.log("\n===============================================================================");
@@ -731,14 +875,18 @@ let passedTests = testResults.filter((t) => t.passed).length;
 for (const [mod, tests] of Object.entries(grouped)) {
   const modPassed = tests.every((t) => t.passed);
   const statusStr = modPassed ? "✓ PASS" : "✗ FAIL";
-  console.log(`\n[${statusStr}] Module: ${mod} (${tests.filter((t) => t.passed).length}/${tests.length} tests)`);
+  console.log(
+    `\n[${statusStr}] Module: ${mod} (${tests.filter((t) => t.passed).length}/${tests.length} tests)`,
+  );
   for (const t of tests) {
     console.log(`    - ${t.passed ? "✓" : "✗"} ${t.testName} ${t.details ? `[${t.details}]` : ""}`);
   }
 }
 
 console.log("\n-------------------------------------------------------------------------------");
-console.log(`TOTAL SCORE: ${passedTests} / ${totalTests} Passed (${Math.round((passedTests / totalTests) * 100)}%)`);
+console.log(
+  `TOTAL SCORE: ${passedTests} / ${totalTests} Passed (${Math.round((passedTests / totalTests) * 100)}%)`,
+);
 console.log("===============================================================================\n");
 
 if (passedTests !== totalTests) {

@@ -1,4 +1,11 @@
-import { CheckCircle2, AlertOctagon, TrendingUp, DollarSign, Clock, Navigation } from "lucide-react";
+import {
+  CheckCircle2,
+  AlertOctagon,
+  TrendingUp,
+  DollarSign,
+  Clock,
+  Navigation,
+} from "lucide-react";
 import { type ComparisonData } from "@/services/api";
 
 function formatRp(val: number) {
@@ -23,7 +30,8 @@ export function ComparisonView({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 w-full">
         <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl shadow-sm min-w-0">
           <div className="flex items-center gap-1.5 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-            <TrendingUp className="h-4 w-4 shrink-0 text-emerald-600" /> <span className="truncate">Food Loss Avoided</span>
+            <TrendingUp className="h-4 w-4 shrink-0 text-emerald-600" />{" "}
+            <span className="truncate">Food Loss Avoided</span>
           </div>
           {showSkeleton ? (
             <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-8 rounded w-3/4 my-1.5" />
@@ -37,7 +45,8 @@ export function ComparisonView({
 
         <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl shadow-sm min-w-0">
           <div className="flex items-center gap-1.5 text-emerald-800 text-xs font-bold uppercase tracking-wider">
-            <DollarSign className="h-4 w-4 shrink-0 text-emerald-600" /> <span className="truncate">Economic Loss Avoided</span>
+            <DollarSign className="h-4 w-4 shrink-0 text-emerald-600" />{" "}
+            <span className="truncate">Economic Loss Avoided</span>
           </div>
           {showSkeleton ? (
             <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-8 rounded w-3/4 my-1.5" />
@@ -54,7 +63,8 @@ export function ComparisonView({
 
         <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl shadow-sm min-w-0">
           <div className="flex items-center gap-1.5 text-slate-600 text-xs font-bold uppercase tracking-wider">
-            <Navigation className="h-4 w-4 shrink-0 text-slate-500" /> <span className="truncate">Biaya BBM Tambahan</span>
+            <Navigation className="h-4 w-4 shrink-0 text-slate-500" />{" "}
+            <span className="truncate">Biaya BBM Tambahan</span>
           </div>
           {showSkeleton ? (
             <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-8 rounded w-3/4 my-1.5" />
@@ -71,7 +81,8 @@ export function ComparisonView({
 
         <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-xl shadow-sm min-w-0">
           <div className="flex items-center gap-1.5 text-blue-800 text-xs font-bold uppercase tracking-wider">
-            <TrendingUp className="h-4 w-4 shrink-0 text-blue-600" /> <span className="truncate">Net Retained Margin</span>
+            <TrendingUp className="h-4 w-4 shrink-0 text-blue-600" />{" "}
+            <span className="truncate">Net Retained Margin</span>
           </div>
           {showSkeleton ? (
             <div className="animate-pulse bg-slate-200 dark:bg-slate-700 h-8 rounded w-3/4 my-1.5" />
@@ -100,7 +111,8 @@ export function ComparisonView({
               <span className="animate-pulse bg-slate-200 h-5 w-16 rounded-full shrink-0" />
             ) : (baseline?.quality_violations_count ?? 0) > 0 ? (
               <span className="self-start sm:self-auto flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-rose-50 text-rose-700 border border-rose-200 shrink-0">
-                <AlertOctagon className="h-3 w-3 shrink-0" /> {baseline?.quality_violations_count} Pelanggaran Mutu
+                <AlertOctagon className="h-3 w-3 shrink-0" /> {baseline?.quality_violations_count}{" "}
+                Pelanggaran Mutu
               </span>
             ) : (
               <span className="self-start sm:self-auto flex items-center gap-1 px-2 py-0.5 text-[10px] font-medium rounded-full bg-slate-100 text-zinc-700 shrink-0">
@@ -146,7 +158,9 @@ export function ComparisonView({
           </div>
 
           <div className="space-y-2 mt-3">
-            <div className="text-[11px] font-semibold text-zinc-500 uppercase">Urutan Penjemputan:</div>
+            <div className="text-[11px] font-semibold text-zinc-500 uppercase">
+              Urutan Penjemputan:
+            </div>
             {showSkeleton ? (
               [1, 2, 3].map((i) => (
                 <div
@@ -185,9 +199,13 @@ export function ComparisonView({
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <span className="text-[10px] text-zinc-500 block whitespace-nowrap">ETA: {stop.eta_minutes} mnt</span>
+                    <span className="text-[10px] text-zinc-500 block whitespace-nowrap">
+                      ETA: {stop.eta_minutes} mnt
+                    </span>
                     {stop.violation && (
-                      <span className="text-[10px] font-bold text-rose-600 block whitespace-nowrap">Kritis Rusak!</span>
+                      <span className="text-[10px] font-bold text-rose-600 block whitespace-nowrap">
+                        Kritis Rusak!
+                      </span>
                     )}
                   </div>
                 </div>
@@ -200,8 +218,12 @@ export function ComparisonView({
         <div className="border border-emerald-300 bg-white rounded-xl p-3.5 sm:p-4 shadow-sm ring-1 ring-emerald-500/10 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-emerald-100">
             <div>
-              <h3 className="text-sm font-bold text-emerald-950">Rute JagaPanen (Spoilage-Aware)</h3>
-              <p className="text-[11px] text-emerald-700">Objektif: Biaya + Detour + Proteksi Mutu</p>
+              <h3 className="text-sm font-bold text-emerald-950">
+                Rute JagaPanen (Spoilage-Aware)
+              </h3>
+              <p className="text-[11px] text-emerald-700">
+                Objektif: Biaya + Detour + Proteksi Mutu
+              </p>
             </div>
             {showSkeleton ? (
               <span className="animate-pulse bg-emerald-100 h-5 w-24 rounded-full shrink-0" />
@@ -249,7 +271,9 @@ export function ComparisonView({
           </div>
 
           <div className="space-y-2 mt-3">
-            <div className="text-[11px] font-semibold text-emerald-800 uppercase">Urutan Penjemputan Cerdas:</div>
+            <div className="text-[11px] font-semibold text-emerald-800 uppercase">
+              Urutan Penjemputan Cerdas:
+            </div>
             {showSkeleton ? (
               [1, 2, 3].map((i) => (
                 <div
@@ -279,14 +303,18 @@ export function ComparisonView({
                       {stop.stop_order}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <span className="font-medium text-emerald-950 truncate block">{stop.label}</span>
+                      <span className="font-medium text-emerald-950 truncate block">
+                        {stop.label}
+                      </span>
                       <span className="text-[10px] text-emerald-700 truncate block">
                         {stop.commodity_name} ({stop.volume_kg} kg)
                       </span>
                     </div>
                   </div>
                   <div className="text-right shrink-0">
-                    <span className="text-[10px] text-emerald-700 block whitespace-nowrap">ETA: {stop.eta_minutes} mnt</span>
+                    <span className="text-[10px] text-emerald-700 block whitespace-nowrap">
+                      ETA: {stop.eta_minutes} mnt
+                    </span>
                     <span className="text-[10px] text-emerald-600 block whitespace-nowrap">
                       Sisa Mutu: {stop.projected_quality_hours_left} jam
                     </span>
@@ -299,7 +327,8 @@ export function ComparisonView({
           {/* Task 4: Explainability UI */}
           <div className="mt-4 p-3 bg-zinc-50 border border-zinc-200 rounded-md">
             <div className="text-[11px] font-bold text-zinc-700 uppercase mb-1.5 flex items-center gap-1">
-              <Clock className="h-3 w-3 text-zinc-500 shrink-0" /> Mengapa Rute Ini Terpilih? (Algoritma Explainability)
+              <Clock className="h-3 w-3 text-zinc-500 shrink-0" /> Mengapa Rute Ini Terpilih?
+              (Algoritma Explainability)
             </div>
             {showSkeleton ? (
               <div className="space-y-2 pt-1 animate-pulse">
@@ -308,7 +337,9 @@ export function ComparisonView({
                 <div className="h-3 bg-zinc-200 rounded w-4/6" />
               </div>
             ) : (jagaPanen?.explainability_reasons?.length ?? 0) === 0 ? (
-              <p className="text-[11px] text-zinc-500">Belum ada data panen untuk dianalisis oleh algoritma explainability.</p>
+              <p className="text-[11px] text-zinc-500">
+                Belum ada data panen untuk dianalisis oleh algoritma explainability.
+              </p>
             ) : (
               <ul className="text-[11px] text-zinc-600 space-y-1 list-disc pl-4 break-words">
                 {jagaPanen?.explainability_reasons.map((reason, idx) => (
