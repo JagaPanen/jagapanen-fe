@@ -400,7 +400,8 @@ export function PlannerPage({
           setSignupOpen(true);
         }
       }
-      toast.success("Rute berhasil dihitung dari backend");
+      toast.success("Rute berhasil dihitung — membuka peta");
+      handleTabChange("map");
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       console.error("[JagaPanen] Optimasi gagal:", e);
@@ -657,7 +658,12 @@ export function PlannerPage({
 
         {activeTab === "comparison" ? (
           <ComparisonView data={comparisonData} isLoading={isHarvestsLoading || isCalculating} />
-        ) : (
+        ) : null}
+
+        {/* Map always after a successful run (and when Map tab is active) so routes are visible */}
+        {activeTab === "map" ||
+        (comparisonData?.baseline?.stops?.length ?? 0) > 0 ||
+        (comparisonData?.jagaPanen?.stops?.length ?? 0) > 0 ? (
           <div className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xs">
             <RouteMap
               harvests={harvests}
@@ -666,9 +672,11 @@ export function PlannerPage({
                 baseline: comparisonData?.baseline?.geometry,
                 spoilage: comparisonData?.jagaPanen?.geometry,
               }}
+              baselineOrderIds={comparisonData?.baseline?.stops?.map((s) => s.harvest_id)}
+              spoilageOrderIds={comparisonData?.jagaPanen?.stops?.map((s) => s.harvest_id)}
             />
           </div>
-        )}
+        ) : null}
 
         <HarvestTable
           harvests={harvests}

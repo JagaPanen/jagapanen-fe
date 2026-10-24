@@ -11,12 +11,17 @@ export function RouteMap({
   mode = "spoilage",
   highlight,
   routeGeometries,
+  baselineOrderIds,
+  spoilageOrderIds,
 }: {
   harvests?: Harvest[];
   mode?: Mode;
   highlight?: "konvensional" | "rekomendasi";
   /** GeoJSON LineString JSON from Mapbox/OSRM when available; OSM tiles remain the basemap */
   routeGeometries?: { baseline?: string | undefined; spoilage?: string | undefined };
+  /** Stop order from API (harvest id or label) — preferred over client heuristic */
+  baselineOrderIds?: string[] | undefined;
+  spoilageOrderIds?: string[] | undefined;
 }) {
   const currentMode: Mode = mode || (highlight === "konvensional" ? "cost" : "spoilage");
 
@@ -72,6 +77,8 @@ export function RouteMap({
             harvests={harvests}
             mode={currentMode}
             routeGeometries={routeGeometries}
+            baselineOrderIds={baselineOrderIds}
+            spoilageOrderIds={spoilageOrderIds}
           />
         </Suspense>
       </ClientOnly>

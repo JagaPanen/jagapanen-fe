@@ -118,23 +118,55 @@ function parseGeoJsonLine(geometryJson?: string): [number, number][] | null {
   }
 }
 
+function resolveHarvestOrder(
+  harvests: Harvest[],
+  orderIds: string[] | undefined,
+  fallbackMode: Mode,
+): Harvest[] {
+  if (orderIds && orderIds.length > 0) {
+    const byId = new Map(harvests.map((h) => [h.id, h]));
+    const byLabel = new Map(harvests.map((h) => [h.lokasi, h]));
+    const byKomoditasLokasi = new Map(harvests.map((h) => [`${h.komoditas}|${h.lokasi}`, h]));
+    const ordered: Harvest[] = [];
+    for (const key of orderIds) {
+      const hit =
+        byId.get(key) ??
+        byLabel.get(key) ??
+        harvests.find((h) => h.lokasi.includes(key) || key.includes(h.lokasi)) ??
+        byKomoditasLokasi.get(key);
+      if (hit && !ordered.includes(hit)) ordered.push(hit);
+    }
+    if (ordered.length > 0) return ordered;
+  }
+  return getRouteSequenceForMode(harvests, fallbackMode);
+}
+
 export function RouteMapLeaflet({
   harvests = [],
   mode = "spoilage",
   highlight,
   routeGeometries,
+  baselineOrderIds,
+  spoilageOrderIds,
 }: {
   harvests?: Harvest[];
   mode?: Mode;
   highlight?: "konvensional" | "rekomendasi";
   routeGeometries?: { baseline?: string | undefined; spoilage?: string | undefined } | undefined;
+  baselineOrderIds?: string[] | undefined;
+  spoilageOrderIds?: string[] | undefined;
 }) {
   const currentMode: Mode = mode || (highlight === "konvensional" ? "cost" : "spoilage");
 
-  // Hitung urutan singgah untuk setiap mode secara dinamis dari array state harvests
-  const costSequence = useMemo(() => getRouteSequenceForMode(harvests, "cost"), [harvests]);
+  const costSequence = useMemo(
+    () => resolveHarvestOrder(harvests, baselineOrderIds, "cost"),
+    [harvests, baselineOrderIds],
+  );
   const balancedSequence = useMemo(() => getRouteSequenceForMode(harvests, "balanced"), [harvests]);
-  const spoilageSequence = useMemo(() => getRouteSequenceForMode(harvests, "spoilage"), [harvests]);
+  const spoilageSequence = useMemo(
+    () => resolveHarvestOrder(harvests, spoilageOrderIds, "spoilage"),
+    [harvests, spoilageOrderIds],
+  );
 
   const apiBaseline = useMemo(
     () => parseGeoJsonLine(routeGeometries?.baseline),
@@ -145,7 +177,7 @@ export function RouteMapLeaflet({
     [routeGeometries?.spoilage],
   );
 
-  // Prefer Mapbox/OSRM geometry; fall back to straight harvest-order segments on OSM tiles
+  // Prefer API geometry (incl. ferry ports); fall back to ordered harvest segments
   const costPositions = useMemo(
     () =>
       apiBaseline && apiBaseline.length > 1
@@ -179,13 +211,16 @@ export function RouteMapLeaflet({
     [apiSpoilage, spoilageSequence],
   );
 
-  // Seluruh koordinat untuk auto fit bounds (termasuk Wonogiri di tenggara)
-  const allCoords = useMemo<[number, number][]>(
-    () => [POOL_COORD, MARKET_COORD, ...harvests.map((h) => [h.lat, h.lng] as [number, number])],
-    [harvests],
-  );
+  // Fit to harvests + drawn polylines (Sumatra/ferry included)
+  const allCoords = useMemo<[number, number][]>(() => {
+    const pts: [number, number][] = [
+      ...harvests.map((h) => [h.lat, h.lng] as [number, number]),
+      ...costPositions,
+      ...spoilagePositions,
+    ];
+    return pts.length > 0 ? pts : [POOL_COORD, MARKET_COORD];
+  }, [harvests, costPositions, spoilagePositions]);
 
-  // Pemetaan nomor urutan rute aktif untuk setiap harvest
   const activeOrderMap = useMemo(() => {
     const activeList =
       currentMode === "cost"
