@@ -26,7 +26,7 @@ export function UsageBanner({ usage }: { usage: BillingUsage | null }) {
         <div className="mx-auto flex max-w-[1600px] flex-wrap items-center justify-between gap-2">
           <p>
             Soft limit: {usage.optimize_runs_used}/{limit} run optimasi (
-            {Math.round(usage.usage_ratio * 100)}%). Pertimbangkan upgrade ke Starter/Fleet.
+            {Math.round(usage.usage_ratio * 100)}%). Pertimbangkan upgrade ke Pro.
           </p>
           <Link
             to="/app/settings/billing"

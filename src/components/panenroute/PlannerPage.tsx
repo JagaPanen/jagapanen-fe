@@ -414,7 +414,7 @@ export function PlannerPage({
       }
       if (!guestMode && /limit|429|Upgrade|Pilot/i.test(message)) {
         toast.message("Kuota plan tercapai", {
-          description: "Buka Billing untuk upgrade ke Starter atau Fleet.",
+          description: "Buka Billing untuk upgrade ke Pro.",
           action: {
             label: "Billing",
             onClick: () => void navigate({ to: "/app/settings/billing" }),
