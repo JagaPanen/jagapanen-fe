@@ -2,7 +2,17 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Database, Play, FileDown } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { ShieldCheck, Database, Play, FileDown, Pencil } from "lucide-react";
 import { RouteMap } from "@/components/panenroute/RouteMap";
 import { HarvestTable } from "@/components/panenroute/HarvestTable";
 import { FormulaDialog, AddHarvestDialog } from "@/components/panenroute/Dialogs";
@@ -19,6 +29,7 @@ import {
   getCommodities,
   getHarvests,
   getScenario,
+  updateScenario,
   probeBackend,
   deleteHarvest,
   backendHarvestToFrontend,
@@ -63,7 +74,11 @@ export function PlannerPage({
   const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
   const [backendError, setBackendError] = useState<string | null>(null);
   const [scenarioId, setScenarioId] = useState<string | null>(scenarioIdProp ?? null);
+  const [scenarioName, setScenarioName] = useState<string>("Skenario");
   const [scenarioStatus, setScenarioStatus] = useState<string | null>(null);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameDraft, setRenameDraft] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
   const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
   const [guestMode, setGuestMode] = useState(!isOrgMode);
@@ -109,12 +124,45 @@ export function PlannerPage({
     try {
       const s = await getScenario(id);
       setScenarioStatus(s.status);
+      if (s.name) setScenarioName(s.name);
       return s;
     } catch (err) {
       console.error("[JagaPanen] Scenario status load failed:", err);
       return null;
     }
   }, []);
+
+  const openRenameDialog = () => {
+    setRenameDraft(scenarioName);
+    setRenameOpen(true);
+  };
+
+  const handleRenameScenario = async () => {
+    const next = renameDraft.trim();
+    if (!scenarioId || !next) {
+      toast.error("Nama skenario wajib diisi");
+      return;
+    }
+    if (guestMode) {
+      setScenarioName(next);
+      setRenameOpen(false);
+      toast.success("Nama skenario diperbarui (lokal)");
+      return;
+    }
+    setIsRenaming(true);
+    try {
+      const s = await updateScenario(scenarioId, { name: next });
+      setScenarioName(s.name);
+      setRenameOpen(false);
+      toast.success("Nama skenario diperbarui");
+    } catch (e) {
+      toast.error("Gagal mengubah nama", {
+        description: e instanceof Error ? e.message : String(e),
+      });
+    } finally {
+      setIsRenaming(false);
+    }
+  };
 
   const loadHarvestsFromBackend = useCallback(
     async (activeScenarioId: string) => {
@@ -479,6 +527,52 @@ export function PlannerPage({
     <div className="min-h-screen min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-slate-50 text-zinc-900 flex flex-col">
       {guestMode ? <GuestBanner runsRemaining={runsRemaining} /> : null}
       <ConvertToSignupModal open={signupOpen} onOpenChange={setSignupOpen} reason={signupReason} />
+      <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Ubah nama skenario</DialogTitle>
+            <DialogDescription className="text-xs">
+              Nama ini muncul di daftar skenario dan riwayat optimasi.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5 py-1">
+            <Label htmlFor="scenario-name" className="text-xs text-zinc-600">
+              Nama skenario
+            </Label>
+            <Input
+              id="scenario-name"
+              value={renameDraft}
+              onChange={(e) => setRenameDraft(e.target.value)}
+              maxLength={200}
+              placeholder="Contoh: Panen Magelang → Giwangan"
+              className="border-slate-200 text-sm"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") void handleRenameScenario();
+              }}
+            />
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setRenameOpen(false)}
+              disabled={isRenaming}
+            >
+              Batal
+            </Button>
+            <Button
+              type="button"
+              size="sm"
+              className="bg-emerald-600 text-white hover:bg-emerald-700"
+              onClick={() => void handleRenameScenario()}
+              disabled={isRenaming || !renameDraft.trim()}
+            >
+              {isRenaming ? "Menyimpan..." : "Simpan"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <header className="w-full border-b border-slate-200 bg-white">
         <div className="mx-auto flex w-full max-w-[1600px] flex-col justify-between gap-3 px-3.5 py-3 sm:flex-row sm:items-center sm:px-5">
           <div className="flex items-center gap-2.5">
@@ -525,6 +619,23 @@ export function PlannerPage({
       <div className="sticky top-0 z-10 w-full border-b border-slate-200 bg-white/95 px-3 py-2 backdrop-blur sm:px-5 sm:py-2.5">
         <div className="mx-auto flex w-full max-w-[1600px] flex-col justify-between gap-2.5 lg:flex-row lg:items-center">
           <div className="flex w-full flex-col items-stretch gap-2 sm:flex-row sm:items-center lg:w-auto">
+            <div className="flex min-w-0 max-w-full items-center gap-1.5 sm:max-w-xs lg:max-w-sm">
+              <p className="truncate text-sm font-semibold text-zinc-800" title={scenarioName}>
+                {scenarioName}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 shrink-0 px-2 text-xs"
+                onClick={openRenameDialog}
+                disabled={!scenarioId || isRenaming}
+                title="Ubah nama skenario"
+              >
+                <Pencil className="h-3.5 w-3.5" />
+                <span className="ml-1 hidden sm:inline">Edit nama</span>
+              </Button>
+            </div>
             <Button
               size="sm"
               onClick={handleRunOptimization}

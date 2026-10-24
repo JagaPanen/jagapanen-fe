@@ -737,6 +737,17 @@ export async function getScenario(scenarioId: string): Promise<Scenario> {
   return apiJson<Scenario>(`/scenarios/${scenarioId}`);
 }
 
+export async function updateScenario(
+  scenarioId: string,
+  patch: { name?: string; optimization_mode?: string; status?: string },
+): Promise<Scenario> {
+  return apiJson<Scenario>(`/scenarios/${scenarioId}`, {
+    method: "PATCH",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(patch),
+  });
+}
+
 export interface RiskScoreItem {
   harvest_id: string;
   label: string;
