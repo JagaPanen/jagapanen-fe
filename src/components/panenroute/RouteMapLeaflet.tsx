@@ -101,14 +101,33 @@ function FitBounds({ coords }: { coords: [number, number][] }) {
   return null;
 }
 
+function parseGeoJsonLine(geometryJson?: string): [number, number][] | null {
+  if (!geometryJson || geometryJson.startsWith("mock_")) return null;
+  try {
+    const geo = JSON.parse(geometryJson) as {
+      type?: string;
+      coordinates?: number[][];
+    };
+    if (geo?.type !== "LineString" || !Array.isArray(geo.coordinates)) return null;
+    // GeoJSON is [lng, lat] → Leaflet [lat, lng]
+    return geo.coordinates
+      .filter((c) => Array.isArray(c) && c.length >= 2)
+      .map((c) => [Number(c[1]), Number(c[0])] as [number, number]);
+  } catch {
+    return null;
+  }
+}
+
 export function RouteMapLeaflet({
   harvests = [],
   mode = "spoilage",
   highlight,
+  routeGeometries,
 }: {
   harvests?: Harvest[];
   mode?: Mode;
   highlight?: "konvensional" | "rekomendasi";
+  routeGeometries?: { baseline?: string | undefined; spoilage?: string | undefined } | undefined;
 }) {
   const currentMode: Mode = mode || (highlight === "konvensional" ? "cost" : "spoilage");
 
@@ -117,14 +136,26 @@ export function RouteMapLeaflet({
   const balancedSequence = useMemo(() => getRouteSequenceForMode(harvests, "balanced"), [harvests]);
   const spoilageSequence = useMemo(() => getRouteSequenceForMode(harvests, "spoilage"), [harvests]);
 
-  // Polylines koordinat dinamis melewati seluruh titik jemput panen aktif
+  const apiBaseline = useMemo(
+    () => parseGeoJsonLine(routeGeometries?.baseline),
+    [routeGeometries?.baseline],
+  );
+  const apiSpoilage = useMemo(
+    () => parseGeoJsonLine(routeGeometries?.spoilage),
+    [routeGeometries?.spoilage],
+  );
+
+  // Prefer Mapbox/OSRM geometry; fall back to straight harvest-order segments on OSM tiles
   const costPositions = useMemo(
-    () => [
-      POOL_COORD,
-      ...costSequence.map((h) => [h.lat, h.lng] as [number, number]),
-      MARKET_COORD,
-    ],
-    [costSequence],
+    () =>
+      apiBaseline && apiBaseline.length > 1
+        ? apiBaseline
+        : [
+            POOL_COORD,
+            ...costSequence.map((h) => [h.lat, h.lng] as [number, number]),
+            MARKET_COORD,
+          ],
+    [apiBaseline, costSequence],
   );
 
   const balancedPositions = useMemo(
@@ -137,12 +168,15 @@ export function RouteMapLeaflet({
   );
 
   const spoilagePositions = useMemo(
-    () => [
-      POOL_COORD,
-      ...spoilageSequence.map((h) => [h.lat, h.lng] as [number, number]),
-      MARKET_COORD,
-    ],
-    [spoilageSequence],
+    () =>
+      apiSpoilage && apiSpoilage.length > 1
+        ? apiSpoilage
+        : [
+            POOL_COORD,
+            ...spoilageSequence.map((h) => [h.lat, h.lng] as [number, number]),
+            MARKET_COORD,
+          ],
+    [apiSpoilage, spoilageSequence],
   );
 
   // Seluruh koordinat untuk auto fit bounds (termasuk Wonogiri di tenggara)

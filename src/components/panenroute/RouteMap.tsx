@@ -10,10 +10,13 @@ export function RouteMap({
   harvests = [],
   mode = "spoilage",
   highlight,
+  routeGeometries,
 }: {
   harvests?: Harvest[];
   mode?: Mode;
   highlight?: "konvensional" | "rekomendasi";
+  /** GeoJSON LineString JSON from Mapbox/OSRM when available; OSM tiles remain the basemap */
+  routeGeometries?: { baseline?: string | undefined; spoilage?: string | undefined };
 }) {
   const currentMode: Mode = mode || (highlight === "konvensional" ? "cost" : "spoilage");
 
@@ -65,7 +68,11 @@ export function RouteMap({
             </div>
           }
         >
-          <RouteMapLeaflet harvests={harvests} mode={currentMode} />
+          <RouteMapLeaflet
+            harvests={harvests}
+            mode={currentMode}
+            routeGeometries={routeGeometries}
+          />
         </Suspense>
       </ClientOnly>
     </div>
