@@ -1,3 +1,4 @@
+import { getAccessToken, setAuthSession, type AuthMeta } from "@/lib/auth-session";
 import { remoteApiBase } from "@/lib/remote-api";
 
 const configured = (import.meta.env["VITE_API_BASE_URL"] as string | undefined)?.replace(/\/$/, "");
@@ -15,21 +16,79 @@ function apiUrl(path: string): string {
   return `${base}${suffix}`;
 }
 
+function authHeaders(extra?: HeadersInit): HeadersInit {
+  const token = getAccessToken();
+  const headers = new Headers(extra);
+  if (token) headers.set("Authorization", `Bearer ${token}`);
+  return headers;
+}
+
+/** Parse FastAPI `{ detail: string | validation[] }` (or plain text) into a UI message. */
+export function parseApiDetail(body: string, fallback = "Permintaan gagal"): string {
+  const trimmed = body.trim();
+  if (!trimmed) return fallback;
+  try {
+    const parsed = JSON.parse(trimmed) as { detail?: unknown };
+    const detail = parsed.detail;
+    if (typeof detail === "string" && detail.trim()) return detail.trim();
+    if (Array.isArray(detail)) {
+      const parts = detail
+        .map((item) => {
+          if (typeof item === "string") return item;
+          if (item && typeof item === "object" && "msg" in item) {
+            const loc = Array.isArray((item as { loc?: unknown }).loc)
+              ? (item as { loc: unknown[] }).loc.filter((p) => p !== "body").join(".")
+              : "";
+            const msg = String((item as { msg: unknown }).msg);
+            return loc ? `${loc}: ${msg}` : msg;
+          }
+          return null;
+        })
+        .filter((p): p is string => Boolean(p));
+      if (parts.length > 0) return parts.join("; ");
+    }
+  } catch {
+    // plain text body
+  }
+  return trimmed.slice(0, 240) || fallback;
+}
+
+export class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+type ApiJsonOptions = RequestInit & { allowEmpty?: boolean };
+
 /** Fetch JSON and always console.error on failure, including status, URL, and a body snippet. */
-export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
+export async function apiJson<T>(path: string, init?: ApiJsonOptions): Promise<T> {
+  const { allowEmpty = false, ...fetchInit } = init ?? {};
   const url = apiUrl(path);
-  const method = (init?.method ?? "GET").toUpperCase();
+  const method = (fetchInit.method ?? "GET").toUpperCase();
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT_MS);
 
   try {
-    const res = await fetch(url, { ...init, signal: controller.signal });
+    const res = await fetch(url, {
+      ...fetchInit,
+      headers: authHeaders(fetchInit.headers),
+      signal: controller.signal,
+    });
     const body = await res.text();
 
     if (!res.ok) {
-      const message = `HTTP ${res.status} ${method} ${url}${body ? ` — ${body.slice(0, 180)}` : ""}`;
+      const detail = parseApiDetail(body, `HTTP ${res.status}`);
+      const message = `HTTP ${res.status} ${method} ${url} — ${detail}`;
       console.error("[JagaPanen API]", message);
-      throw new Error(message);
+      throw new ApiError(res.status, detail);
+    }
+
+    if (res.status === 204 || (allowEmpty && !body.trim())) {
+      return undefined as T;
     }
 
     const contentType = res.headers.get("content-type") ?? "";
@@ -47,6 +106,7 @@ export async function apiJson<T>(path: string, init?: RequestInit): Promise<T> {
       throw new Error(message);
     }
   } catch (err) {
+    if (err instanceof ApiError) throw err;
     if (err instanceof Error && /^(HTTP |Non-JSON |Invalid JSON )/.test(err.message)) {
       throw err;
     }
@@ -89,6 +149,49 @@ export interface Vehicle {
   capacity_kg: number;
   cost_per_km_idr: number;
   active: boolean;
+  current_location_lat?: number;
+  current_location_lng?: number;
+  available_from?: string;
+  available_until?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface RouteResultSchema {
+  run_id: string;
+  result_type: "baseline" | "spoilage_aware" | string;
+  mode: string;
+  vehicle_id: string;
+  pickup_sequence: string[];
+  distance_km: number;
+  duration_hours: number;
+  risk_score: number;
+  cost_idr: number;
+  geometry: string;
+}
+
+export interface OptimizationResponse {
+  scenario_id: string;
+  mode: string;
+  baseline_route: RouteResultSchema;
+  spoilage_aware_route: RouteResultSchema;
+  estimated_food_loss_avoided_kg: number;
+  economic_loss_avoided_idr: number;
+  additional_logistics_cost_idr: number;
+  net_value_idr: number;
+}
+
+export interface HarvestUpdatePayload {
+  commodity_id?: string;
+  label?: string;
+  location_lat?: number;
+  location_lng?: number;
+  volume_kg?: number;
+  harvested_at?: string;
+  destination_lat?: number;
+  destination_lng?: number;
+  destination_name?: string;
+  handling_factor?: number;
 }
 
 export interface RouteStop {
@@ -481,16 +584,35 @@ export interface Scenario {
 
 export const DEFAULT_SCENARIO_ID = "11111111-1111-1111-1111-111111111111";
 
+const PREFERRED_SCENARIO_STATUSES = new Set(["draft", "ready", "completed"]);
+
 export async function getScenarios(): Promise<Scenario[]> {
-  try {
-    return await apiJson<Scenario[]>("/scenarios");
-  } catch (err) {
-    console.error("[JagaPanen API] Scenario list failed:", err);
-    return [];
-  }
+  return apiJson<Scenario[]>("/scenarios");
 }
 
-export async function getHarvests(scenarioId = DEFAULT_SCENARIO_ID): Promise<BackendHarvest[]> {
+export async function createScenario(
+  name = "JagaPanen Live",
+  optimizationMode: "cost_priority" | "balanced" | "spoilage_priority" = "spoilage_priority",
+): Promise<Scenario> {
+  return apiJson<Scenario>("/scenarios", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, optimization_mode: optimizationMode }),
+  });
+}
+
+/** Prefer newest draft/ready/completed scenario; create one if the list is empty. */
+export async function listOrCreateScenario(): Promise<Scenario> {
+  const scenarios = await getScenarios();
+  if (!Array.isArray(scenarios) || scenarios.length === 0) {
+    return createScenario();
+  }
+  const preferred = scenarios.find((s) => PREFERRED_SCENARIO_STATUSES.has(s.status));
+  return preferred ?? scenarios[0]!;
+}
+
+export async function getHarvests(scenarioId: string): Promise<BackendHarvest[]> {
+  if (!scenarioId) return [];
   try {
     return await apiJson<BackendHarvest[]>(`/scenarios/${scenarioId}/harvests`);
   } catch (err) {
@@ -501,30 +623,120 @@ export async function getHarvests(scenarioId = DEFAULT_SCENARIO_ID): Promise<Bac
 
 export async function createHarvest(
   harvest: HarvestCreatePayload,
-  scenarioId = DEFAULT_SCENARIO_ID,
+  scenarioId: string,
 ): Promise<BackendHarvest> {
-  const res = await fetch(`${API_BASE_URL}/scenarios/${scenarioId}/harvests`, {
+  return apiJson<BackendHarvest>(`/scenarios/${scenarioId}/harvests`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: authHeaders({ "Content-Type": "application/json" }),
     body: JSON.stringify(harvest),
   });
+}
+
+export async function updateHarvest(
+  harvestId: string,
+  patch: HarvestUpdatePayload,
+): Promise<BackendHarvest> {
+  return apiJson<BackendHarvest>(`/harvests/${harvestId}`, {
+    method: "PATCH",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify(patch),
+  });
+}
+
+export async function resetScenarioToDraft(scenarioId: string): Promise<Scenario> {
+  return apiJson<Scenario>(`/scenarios/${scenarioId}/reset-to-draft`, {
+    method: "POST",
+  });
+}
+
+export interface DemoSessionResponse {
+  access_token: string;
+  token_type: string;
+  role: "guest" | "user";
+  org_id: string;
+  expires_at: string;
+  scenario_id?: string | null;
+  runs_used?: number | null;
+  runs_remaining?: number | null;
+  user_id?: string | null;
+  email?: string | null;
+}
+
+export async function createDemoSession(): Promise<DemoSessionResponse> {
+  // Demo session must not send a stale user/guest Bearer token.
+  const url = apiUrl("/auth/demo-session");
+  const res = await fetch(url, { method: "POST" });
+  const body = await res.text();
   if (!res.ok) {
-    const errText = await res.text().catch(() => "");
-    throw new Error(`HTTP ${res.status}: Gagal menyimpan panen ke backend (${errText})`);
+    throw new ApiError(res.status, parseApiDetail(body, `HTTP ${res.status}`));
   }
-  return res.json();
+  const data = JSON.parse(body) as DemoSessionResponse;
+  const meta: AuthMeta = {
+    role: data.role === "guest" ? "guest" : "user",
+    orgId: data.org_id,
+    scenarioId: data.scenario_id,
+    runsUsed: data.runs_used,
+    runsRemaining: data.runs_remaining,
+    expiresAt: data.expires_at,
+    email: data.email,
+  };
+  setAuthSession(data.access_token, meta);
+  return data;
+}
+
+export async function signup(payload: {
+  email: string;
+  password: string;
+  full_name?: string;
+  organization_name: string;
+}): Promise<DemoSessionResponse> {
+  const data = await apiJson<DemoSessionResponse>("/auth/signup", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  setAuthSession(data.access_token, {
+    role: "user",
+    orgId: data.org_id,
+    email: data.email,
+    expiresAt: data.expires_at,
+  });
+  return data;
+}
+
+export async function login(payload: {
+  email: string;
+  password: string;
+}): Promise<DemoSessionResponse> {
+  const data = await apiJson<DemoSessionResponse>("/auth/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  setAuthSession(data.access_token, {
+    role: "user",
+    orgId: data.org_id,
+    email: data.email,
+    expiresAt: data.expires_at,
+  });
+  return data;
 }
 
 export async function deleteHarvest(harvestId: string): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE_URL}/harvests/${harvestId}`, {
+    await apiJson<void>(`/harvests/${harvestId}`, {
       method: "DELETE",
+      allowEmpty: true,
     });
-    return res.ok || res.status === 204;
+    return true;
   } catch (err) {
     console.warn(`Gagal menghapus panen ${harvestId}:`, err);
     return false;
   }
+}
+
+export function isUuidLike(id: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
 }
 
 export function backendHarvestToFrontend(
@@ -567,26 +779,137 @@ export function backendHarvestToFrontend(
   };
 }
 
-export async function runOptimization(scenarioId: string, mode: string): Promise<ComparisonData> {
-  try {
-    const res = await fetch(`${API_BASE_URL}/optimization/run`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ scenario_id: scenarioId, mode }),
-    });
-    if (!res.ok) throw new Error(`HTTP ${res.status}: Optimasi gagal`);
-    const data = await res.json();
-    if (data.baseline && data.jagaPanen) {
-      return {
-        baseline: data.baseline,
-        jagaPanen: data.jagaPanen,
-      };
-    }
-    return DEMO_FALLBACK_COMPARISON;
-  } catch (err) {
-    console.warn("Optimasi backend gagal, beralih ke fallback cache:", err);
-    return DEMO_FALLBACK_COMPARISON;
+function routeToOptimizationResult(
+  route: RouteResultSchema,
+  label: string,
+  harvestLookup: Map<
+    string,
+    { label: string; commodity_name: string; perishability_class: string; volume_kg: number }
+  >,
+  impact?: {
+    food_loss_avoided_kg: number;
+    economic_loss_avoided_idr: number;
+    additional_logistics_cost_idr: number;
+    net_retained_margin_idr: number;
+  },
+): OptimizationResult {
+  const stops: RouteStop[] = (route.pickup_sequence ?? []).map((harvestId, index) => {
+    const meta = harvestLookup.get(harvestId);
+    return {
+      stop_order: index + 1,
+      harvest_id: harvestId,
+      label: meta?.label || harvestId,
+      commodity_name: meta?.commodity_name || meta?.label || "Komoditas",
+      perishability_class: meta?.perishability_class || "-",
+      volume_kg: meta?.volume_kg ?? 0,
+      eta_minutes: Math.round(
+        ((route.duration_hours || 0) * 60 * (index + 1)) /
+          Math.max(1, route.pickup_sequence.length),
+      ),
+      cumulative_distance_km:
+        Math.round(
+          (((route.distance_km || 0) * (index + 1)) / Math.max(1, route.pickup_sequence.length)) *
+            10,
+        ) / 10,
+      projected_quality_hours_left: 0,
+      violation: false,
+    };
+  });
+
+  return {
+    mode: label,
+    vehicle_used: route.vehicle_id || "Armada",
+    total_distance_km: Number(route.distance_km) || 0,
+    total_duration_minutes: Math.round((Number(route.duration_hours) || 0) * 60),
+    logistics_cost_idr: Math.round(Number(route.cost_idr) || 0),
+    spoilage_risk_score: Math.round(Number(route.risk_score) || 0),
+    food_loss_avoided_kg: impact?.food_loss_avoided_kg ?? 0,
+    economic_loss_avoided_idr: impact?.economic_loss_avoided_idr ?? 0,
+    additional_logistics_cost_idr: impact?.additional_logistics_cost_idr ?? 0,
+    net_retained_margin_idr: impact?.net_retained_margin_idr ?? 0,
+    quality_violations_count: 0,
+    stops,
+    explainability_reasons: [],
+  };
+}
+
+/** Map collection OptimizationResponse → ComparisonView model. Throws if routes missing. */
+export function mapOptimizationResponse(
+  res: OptimizationResponse,
+  harvests: Array<{
+    id: string;
+    label?: string;
+    lokasi?: string;
+    komoditas?: string;
+    kelas?: string;
+    volume?: number;
+  }> = [],
+): ComparisonData {
+  if (!res?.baseline_route || !res?.spoilage_aware_route) {
+    throw new Error("Respons optimasi tidak memiliki baseline_route / spoilage_aware_route");
   }
+
+  const harvestLookup = new Map(
+    harvests.map((h) => [
+      h.id,
+      {
+        label: h.label || h.lokasi || h.id,
+        commodity_name: h.komoditas || h.label || "Komoditas",
+        perishability_class: h.kelas || "-",
+        volume_kg: Number(h.volume) || 0,
+      },
+    ]),
+  );
+
+  const baseline = routeToOptimizationResult(
+    res.baseline_route,
+    "Baseline (Jarak Terpendek)",
+    harvestLookup,
+  );
+  const jagaPanen = routeToOptimizationResult(
+    res.spoilage_aware_route,
+    "JagaPanen (Spoilage-Aware)",
+    harvestLookup,
+    {
+      food_loss_avoided_kg: Number(res.estimated_food_loss_avoided_kg) || 0,
+      economic_loss_avoided_idr: Number(res.economic_loss_avoided_idr) || 0,
+      additional_logistics_cost_idr: Number(res.additional_logistics_cost_idr) || 0,
+      net_retained_margin_idr: Number(res.net_value_idr) || 0,
+    },
+  );
+
+  const detourKm = Math.max(
+    0,
+    Math.round((jagaPanen.total_distance_km - baseline.total_distance_km) * 10) / 10,
+  );
+  const riskDrop = Math.max(0, baseline.spoilage_risk_score - jagaPanen.spoilage_risk_score);
+
+  baseline.explainability_reasons = [
+    `Mode API: ${res.mode || res.baseline_route.mode || "balanced"}.`,
+    `Rute baseline menempuh ${baseline.total_distance_km} km dengan skor risiko ${baseline.spoilage_risk_score}.`,
+    `Urutan jemput: ${res.baseline_route.pickup_sequence?.length ?? 0} titik dari respons backend.`,
+  ];
+  jagaPanen.explainability_reasons = [
+    `Mode API: ${res.mode || res.spoilage_aware_route.mode || "spoilage_priority"}.`,
+    detourKm > 0
+      ? `Detour terencana +${detourKm} km dibanding baseline (dari field distance_km API).`
+      : "Jarak spoilage-aware tidak melebihi baseline.",
+    `Skor risiko turun ${riskDrop} poin (${baseline.spoilage_risk_score} → ${jagaPanen.spoilage_risk_score}).`,
+    `Food loss dihindari (API): ${jagaPanen.food_loss_avoided_kg} kg; nilai bersih ${jagaPanen.net_retained_margin_idr}.`,
+  ];
+
+  return { baseline, jagaPanen };
+}
+
+export async function runOptimization(
+  scenarioId: string,
+  mode: "cost_priority" | "balanced" | "spoilage_priority" = "spoilage_priority",
+): Promise<OptimizationResponse> {
+  return apiJson<OptimizationResponse>("/optimization/run", {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ scenario_id: scenarioId, mode }),
+  });
 }
 
 export function haversineDistanceKm(
@@ -873,38 +1196,4 @@ export function calculateClientOptimization(payload: ClientOptimizationPayload):
       explainability_reasons: jagaReasons,
     },
   };
-}
-
-export async function runDynamicScenario(
-  payload: ClientOptimizationPayload,
-): Promise<ComparisonData> {
-  const isLocalBackend =
-    API_BASE_URL.includes("localhost") ||
-    API_BASE_URL.includes("127.0.0.1") ||
-    API_BASE_URL.includes("0.0.0.0");
-
-  if (isLocalBackend) {
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3000);
-      const res = await fetch(`${API_BASE_URL}/scenarios/run-dynamic`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.comparison) {
-          return data.comparison;
-        }
-      }
-    } catch {
-      // Local BE down or error, fall through to client optimization
-    }
-  }
-
-  // Gunakan kalkulasi deterministik langsung (zero network error pada remote server)
-  return calculateClientOptimization(payload);
 }
