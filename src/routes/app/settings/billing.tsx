@@ -31,7 +31,7 @@ function BillingPage() {
   const search = Route.useSearch();
   const [usage, setUsage] = useState<BillingUsage | null>(null);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState<"starter" | "fleet" | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -73,11 +73,11 @@ function BillingPage() {
     };
   }, [search.checkout, search.external_id, load]);
 
-  const onCheckout = async (plan: "starter" | "fleet", activateStub: boolean) => {
-    setBusy(plan);
+  const onCheckoutPro = async (activateStub: boolean) => {
+    setBusy(true);
     try {
-      const res = await startBillingCheckout(plan, activateStub);
-      toast.success(activateStub ? `Plan ${plan} aktif` : "Checkout stub dibuat", {
+      const res = await startBillingCheckout("pro", activateStub);
+      toast.success(activateStub ? "Plan Pro aktif" : "Checkout stub dibuat", {
         description: res.message,
       });
       await load();
@@ -86,7 +86,7 @@ function BillingPage() {
         description: e instanceof Error ? e.message : String(e),
       });
     } finally {
-      setBusy(null);
+      setBusy(false);
     }
   };
 
@@ -99,7 +99,7 @@ function BillingPage() {
         <div>
           <h1 className="text-xl font-semibold text-zinc-900">Billing & usage</h1>
           <p className="text-sm text-zinc-500">
-            Meter run optimasi, Pilot expiry, dan checkout Starter/Fleet (stub Xendit).
+            Meter run optimasi untuk plan Basic / Pro (checkout stub Xendit).
           </p>
         </div>
         <Button asChild variant="outline" size="sm" className="h-8 text-xs">
@@ -140,12 +140,6 @@ function BillingPage() {
                 style={{ width: `${Math.min(100, pct)}%` }}
               />
             </div>
-            {usage.pilot_ends_at ? (
-              <p className="text-xs text-zinc-500">
-                Pilot berakhir: {new Date(usage.pilot_ends_at).toLocaleString("id-ID")}
-                {usage.pilot_expired ? " — sudah berakhir" : ""}
-              </p>
-            ) : null}
             {usage.message ? (
               <p className="rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-950">
                 {usage.message}
@@ -156,34 +150,22 @@ function BillingPage() {
       </section>
 
       <section className="mt-4 rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <h2 className="text-sm font-semibold text-zinc-800">Upgrade</h2>
+        <h2 className="text-sm font-semibold text-zinc-800">Upgrade ke Pro</h2>
         <p className="mt-1 text-xs text-zinc-500">
-          Mode stub: aktivasi langsung, atau buat pending lalu konfirmasi webhook. Lihat{" "}
-          <code className="text-[11px]">docs/BILLING.md</code> di backend.
+          Basic gratis dengan kuota bulanan. Pro menaikkan limit run. Mode stub: aktivasi langsung.
         </p>
-        <div className="mt-4 grid gap-3 sm:grid-cols-2">
-          <div className="rounded-md border border-slate-200 p-3">
-            <p className="text-sm font-medium">Starter</p>
-            <p className="mt-1 text-xs text-zinc-500">200 run / bulan · PDF export</p>
-            <Button
-              className="mt-3 h-8 w-full bg-emerald-700 text-xs hover:bg-emerald-800"
-              disabled={busy !== null}
-              onClick={() => void onCheckout("starter", true)}
-            >
-              {busy === "starter" ? "Memproses…" : "Aktifkan Starter (stub)"}
-            </Button>
-          </div>
-          <div className="rounded-md border border-slate-200 p-3">
-            <p className="text-sm font-medium">Fleet</p>
-            <p className="mt-1 text-xs text-zinc-500">1.000 run / bulan · multi-scenario</p>
-            <Button
-              className="mt-3 h-8 w-full bg-emerald-700 text-xs hover:bg-emerald-800"
-              disabled={busy !== null}
-              onClick={() => void onCheckout("fleet", true)}
-            >
-              {busy === "fleet" ? "Memproses…" : "Aktifkan Fleet (stub)"}
-            </Button>
-          </div>
+        <div className="mt-4 max-w-md rounded-md border border-slate-200 p-3">
+          <p className="text-sm font-medium">Pro</p>
+          <p className="mt-1 text-xs text-zinc-500">
+            2.000 run / bulan · full dashboard · prioritas support
+          </p>
+          <Button
+            className="mt-3 h-8 w-full bg-emerald-700 text-xs hover:bg-emerald-800"
+            disabled={busy || usage?.plan === "pro"}
+            onClick={() => void onCheckoutPro(true)}
+          >
+            {busy ? "Memproses…" : usage?.plan === "pro" ? "Sudah Pro" : "Aktifkan Pro (stub)"}
+          </Button>
         </div>
       </section>
     </div>
