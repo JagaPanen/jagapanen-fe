@@ -649,6 +649,75 @@ export async function resetScenarioToDraft(scenarioId: string): Promise<Scenario
   });
 }
 
+export async function getScenario(scenarioId: string): Promise<Scenario> {
+  return apiJson<Scenario>(`/scenarios/${scenarioId}`);
+}
+
+export interface RiskScoreItem {
+  harvest_id: string;
+  label: string;
+  perishability_class: string;
+  urgency_score: number;
+  recommended_max_transit_hours: number;
+  priority_level: string;
+  time_since_harvest_hours: number;
+  estimated_transit_hours: number;
+  shelf_life_hours: number;
+  handling_factor: number;
+  formula_version: string;
+  explanation: string;
+}
+
+export interface RiskScoreResponse {
+  count: number;
+  formula_version: string;
+  results: RiskScoreItem[];
+}
+
+export async function scoreRisk(harvestIds: string[]): Promise<RiskScoreResponse> {
+  return apiJson<RiskScoreResponse>("/risk/score", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ harvest_ids: harvestIds }),
+  });
+}
+
+export interface FeasibleVehicle {
+  vehicle_id: string;
+  vehicle_name: string;
+  is_feasible: boolean;
+  reasons: string[];
+  total_volume_kg: number;
+  remaining_capacity_kg: number;
+}
+
+export interface ConsolidationOption {
+  harvest_ids: string[];
+  is_feasible: boolean;
+  reasons: string[];
+  total_volume_kg: number;
+  estimated_distance_km: number;
+  vehicle_id?: string | null;
+  vehicle_name?: string | null;
+}
+
+export interface FeasibilityPreviewResponse {
+  scenario_id: string;
+  feasible_vehicles: FeasibleVehicle[];
+  rejected_vehicles: FeasibleVehicle[];
+  consolidation_options: ConsolidationOption[];
+}
+
+export async function previewOptimization(
+  scenarioId: string,
+): Promise<FeasibilityPreviewResponse> {
+  return apiJson<FeasibilityPreviewResponse>("/optimization/preview", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ scenario_id: scenarioId }),
+  });
+}
+
 export interface DemoSessionResponse {
   access_token: string;
   token_type: string;
@@ -844,6 +913,7 @@ export function mapOptimizationResponse(
     kelas?: string;
     volume?: number;
   }> = [],
+  opts?: { vehicleLabel?: string },
 ): ComparisonData {
   if (!res?.baseline_route || !res?.spoilage_aware_route) {
     throw new Error("Respons optimasi tidak memiliki baseline_route / spoilage_aware_route");
@@ -878,6 +948,11 @@ export function mapOptimizationResponse(
     },
   );
 
+  if (opts?.vehicleLabel) {
+    baseline.vehicle_used = opts.vehicleLabel;
+    jagaPanen.vehicle_used = opts.vehicleLabel;
+  }
+
   const detourKm = Math.max(
     0,
     Math.round((jagaPanen.total_distance_km - baseline.total_distance_km) * 10) / 10,
@@ -904,11 +979,16 @@ export function mapOptimizationResponse(
 export async function runOptimization(
   scenarioId: string,
   mode: "cost_priority" | "balanced" | "spoilage_priority" = "spoilage_priority",
+  vehicleId?: string,
 ): Promise<OptimizationResponse> {
   return apiJson<OptimizationResponse>("/optimization/run", {
     method: "POST",
     headers: authHeaders({ "Content-Type": "application/json" }),
-    body: JSON.stringify({ scenario_id: scenarioId, mode }),
+    body: JSON.stringify({
+      scenario_id: scenarioId,
+      mode,
+      ...(vehicleId ? { vehicle_id: vehicleId } : {}),
+    }),
   });
 }
 
