@@ -17,7 +17,9 @@ export type Harvest = {
 };
 
 export const LOCATION_COORDINATES: Record<string, [number, number]> = {
+  // Jawa Tengah / DIY
   "Titik A — Desa Sawangan": [-7.5312, 110.3541],
+  "Titik A — Desa Sawangan (Magelang)": [-7.5312, 110.3541],
   "Titik A — Desa Banyuroto": [-7.5312, 110.3541],
   "Titik B — Desa Ngablak": [-7.3985, 110.3952],
   "Titik C — Desa Grabag": [-7.3684, 110.334],
@@ -25,18 +27,47 @@ export const LOCATION_COORDINATES: Record<string, [number, number]> = {
   "Titik E — Bandungan (Sayur Daun)": [-7.2186, 110.3694],
   "Temanggung (Tembakau/Cabai)": [-7.3167, 110.1667],
   "Cepogo (Boyolali)": [-7.5186, 110.5189],
+  "Kopeng (Getasan, hortikultura)": [-7.377, 110.438],
+  "Dieng (Wonosobo, kentang)": [-7.21, 109.908],
+  "Sleman (DIY hortikultura)": [-7.716, 110.355],
+  // Jawa Barat
+  "Lembang (Bandung)": [-6.816, 107.617],
+  "Pangalengan (Bandung)": [-7.16, 107.57],
+  "Cianjur (sayur dataran)": [-6.817, 107.142],
+  "Garut (cabai/sayur)": [-7.211, 107.907],
+  // Jawa Timur
+  "Batu (Malang)": [-7.87, 112.528],
+  "Poncokusumo (Malang)": [-8.037, 112.785],
+  "Probolinggo (bawang)": [-7.755, 113.216],
+  "Nganjuk (bawang merah)": [-7.604, 111.904],
+  // Lainnya
+  "Berastagi (Karo, Sumut)": [-3.195, 98.508],
+  "Bedugul (Bali)": [-8.275, 115.166],
 };
 
 export const DEFAULT_COORDINATE: [number, number] = [-7.502, 110.2185]; // Pool Magelang
 
 export const LOCATION_PRESETS = [
-  "Titik A — Desa Sawangan",
+  "Titik A — Desa Sawangan (Magelang)",
   "Titik B — Desa Ngablak",
   "Titik C — Desa Grabag",
   "Titik D — Wonogiri (Sentra Palawija)",
   "Titik E — Bandungan (Sayur Daun)",
   "Temanggung (Tembakau/Cabai)",
   "Cepogo (Boyolali)",
+  "Kopeng (Getasan, hortikultura)",
+  "Dieng (Wonosobo, kentang)",
+  "Sleman (DIY hortikultura)",
+  "Lembang (Bandung)",
+  "Pangalengan (Bandung)",
+  "Cianjur (sayur dataran)",
+  "Garut (cabai/sayur)",
+  "Batu (Malang)",
+  "Poncokusumo (Malang)",
+  "Probolinggo (bawang)",
+  "Nganjuk (bawang merah)",
+  "Berastagi (Karo, Sumut)",
+  "Bedugul (Bali)",
 ];
 
 export const VEHICLE = {
