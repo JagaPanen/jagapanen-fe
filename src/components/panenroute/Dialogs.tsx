@@ -57,7 +57,7 @@ export function FormulaDialog() {
             <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
               Spoilage Risk Score
             </p>
-            <code className="mt-1.5 block font-mono text-[11px] sm:text-[13px] text-zinc-900 break-words overflow-x-auto">
+            <code className="mt-1.5 block font-mono text-[11px] sm:text-[13px] text-zinc-900 wrap-break-word overflow-x-auto">
               Spoilage Risk = min(100, ((t_harvest + t_transit) / ShelfLife) × 100 × k_handling)
             </code>
           </div>
@@ -66,7 +66,7 @@ export function FormulaDialog() {
             <p className="text-[11px] font-semibold uppercase tracking-wide text-zinc-500">
               Objective Function
             </p>
-            <code className="mt-1.5 block font-mono text-[11px] sm:text-[13px] text-zinc-900 break-words overflow-x-auto">
+            <code className="mt-1.5 block font-mono text-[11px] sm:text-[13px] text-zinc-900 wrap-break-word overflow-x-auto">
               Total Cost = α(Travel Cost) + β(Detour Cost) + γ(Spoilage Risk)
             </code>
           </div>
@@ -94,7 +94,7 @@ export function FormulaDialog() {
                 <span className="w-28 shrink-0 font-mono text-[11px] sm:text-[12px] font-semibold text-emerald-700">
                   {k}
                 </span>
-                <span className="text-xs sm:text-[13px] text-zinc-600 break-words">{v}</span>
+                <span className="text-xs sm:text-[13px] text-zinc-600 wrap-break-word">{v}</span>
               </div>
             ))}
           </div>
