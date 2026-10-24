@@ -6,13 +6,24 @@ import { Label } from "@/components/ui/label";
 import { signup } from "@/services/api";
 import { toast } from "sonner";
 
+type SignupPlan = "starter" | "fleet" | "pilot" | "enterprise";
+type SignupSearch = { plan?: SignupPlan };
+
 export const Route = createFileRoute("/signup")({
+  validateSearch: (search: Record<string, unknown>): SignupSearch => {
+    const raw = typeof search["plan"] === "string" ? search["plan"].toLowerCase() : undefined;
+    if (raw === "starter" || raw === "fleet" || raw === "pilot" || raw === "enterprise") {
+      return { plan: raw };
+    }
+    return {};
+  },
   head: () => ({ meta: [{ title: "Daftar — JagaPanen" }] }),
   component: SignupPage,
 });
 
 function SignupPage() {
   const navigate = useNavigate();
+  const { plan = "pilot" } = Route.useSearch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -30,8 +41,12 @@ function SignupPage() {
         organization_name: orgName.trim() || "Organisasi Saya",
         ...(trimmedName ? { full_name: trimmedName } : {}),
       });
-      toast.success("Akun dibuat");
-      await navigate({ to: "/app/scenarios" });
+      toast.success("Akun Pilot dibuat");
+      if (plan === "starter" || plan === "fleet") {
+        await navigate({ to: "/app/settings/billing", search: { plan } });
+      } else {
+        await navigate({ to: "/app/scenarios" });
+      }
     } catch (err) {
       toast.error("Gagal daftar", {
         description: err instanceof Error ? err.message : String(err),
@@ -49,7 +64,9 @@ function SignupPage() {
         </Link>
         <h1 className="text-xl font-semibold text-zinc-900">Buat akun organisasi</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          Setelah daftar Anda masuk ke workspace <code className="text-xs">/app</code>.
+          Memulai <strong className="capitalize">{plan}</strong> — setelah daftar Anda masuk ke
+          workspace <code className="text-xs">/app</code>
+          {plan === "starter" || plan === "fleet" ? " lalu checkout di Billing" : ""}.
         </p>
         <form onSubmit={onSubmit} className="mt-6 space-y-3">
           <div className="space-y-1.5">

@@ -19,11 +19,11 @@ export function ConvertToSignupModal({
   reason?: "limit" | "export";
 }) {
   const title =
-    reason === "export" ? "Ekspor tersedia untuk akun organisasi" : "Kuota demo sudah habis";
+    reason === "export" ? "Ekspor untuk akun berbayar / Pilot" : "Kuota demo guest habis";
   const body =
     reason === "export"
-      ? "Laporan keputusan (PDF/CSV) hanya untuk workspace berbayar atau trial org. Buat akun untuk menyimpan skenario dan mengunduh laporan."
-      : "Anda sudah memakai 5/5 run optimasi di mode guest. Daftar gratis untuk lanjut merencanakan di workspace koperasi Anda.";
+      ? "PDF/CSV decision report tersedia setelah daftar: mulai Free Pilot (14 hari, 25 run), lalu lanjut Starter atau Fleet saat koperasi Anda siap skala."
+      : "Guest gratis 5 run di data contoh. Lanjut dengan Free Pilot (uji coba 14 hari), lalu upgrade ke Starter (200 run/bulan) atau Fleet (1.000 run/bulan) — tanpa marketplace atau harga komoditas dinamis.";
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -32,6 +32,17 @@ export function ConvertToSignupModal({
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription className="text-sm leading-relaxed">{body}</DialogDescription>
         </DialogHeader>
+        <ul className="space-y-1.5 text-xs text-zinc-600">
+          <li>
+            <strong>Pilot</strong> — workspace org terbatas waktu
+          </li>
+          <li>
+            <strong>Starter</strong> — skenario harian + ekspor laporan
+          </li>
+          <li>
+            <strong>Fleet</strong> — kapasitas run & armada lebih besar
+          </li>
+        </ul>
         <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-end">
           <Button
             variant="outline"
@@ -41,7 +52,9 @@ export function ConvertToSignupModal({
             Nanti saja
           </Button>
           <Button asChild className="w-full bg-emerald-700 hover:bg-emerald-800 sm:w-auto">
-            <Link to="/signup">Buat akun gratis</Link>
+            <Link to="/signup" search={{ plan: "pilot" }}>
+              Mulai Free Pilot
+            </Link>
           </Button>
         </DialogFooter>
       </DialogContent>

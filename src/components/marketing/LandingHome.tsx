@@ -33,26 +33,29 @@ const PRICING = [
   },
   {
     name: "Pilot",
-    price: "Uji coba",
-    blurb: "Workspace org terbatas waktu untuk koperasi mitra.",
+    price: "Gratis 14 hari",
+    blurb: "1 seat · 25 run optimasi · laporan ber-watermark.",
     demo: false,
-    label: "Mulai pilot",
+    plan: "pilot" as const,
+    label: "Mulai Pilot",
     highlight: true,
   },
   {
     name: "Starter",
-    price: "Dari koperasi",
-    blurb: "Skenario harian, armada dan katalog, riwayat run.",
+    price: "IDR 499rb/bln",
+    blurb: "3 seats · 5 kendaraan · 200 run/bulan · PDF export.",
     demo: false,
-    label: "Daftar",
+    plan: "starter" as const,
+    label: "Daftar → Starter",
     highlight: false,
   },
   {
     name: "Fleet",
-    price: "Multi-armada",
-    blurb: "Kapasitas lebih besar, laporan keputusan, multi-dispatcher.",
+    price: "IDR 1,5jt/bln",
+    blurb: "10 seats · 25 kendaraan · 1.000 run/bulan.",
     demo: false,
-    label: "Hubungi kami",
+    plan: "fleet" as const,
+    label: "Daftar → Fleet",
     highlight: false,
   },
   {
@@ -60,6 +63,7 @@ const PRICING = [
     price: "Custom",
     blurb: "SSO, SLA, integrasi fleet dan ERP sesuai kebutuhan.",
     demo: false,
+    plan: "enterprise" as const,
     label: "Bicara sales",
     highlight: false,
   },
@@ -370,8 +374,14 @@ export function LandingPage() {
                     <Link to="/demo" search={{ tab: "comparison" }}>
                       {plan.label}
                     </Link>
+                  ) : "plan" in plan && plan.plan === "enterprise" ? (
+                    <a href="mailto:sales@jagapanen.id?subject=JagaPanen%20Enterprise">
+                      {plan.label}
+                    </a>
                   ) : (
-                    <Link to="/signup">{plan.label}</Link>
+                    <Link to="/signup" search={{ plan: "plan" in plan ? plan.plan : "pilot" }}>
+                      {plan.label}
+                    </Link>
                   )}
                 </Button>
               </div>
