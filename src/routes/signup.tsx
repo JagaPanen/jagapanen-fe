@@ -6,15 +6,18 @@ import { Label } from "@/components/ui/label";
 import { signup } from "@/services/api";
 import { toast } from "sonner";
 
-type SignupPlan = "starter" | "fleet" | "pilot" | "enterprise";
+type SignupPlan = "basic" | "pro";
 type SignupSearch = { plan?: SignupPlan };
 
 export const Route = createFileRoute("/signup")({
   validateSearch: (search: Record<string, unknown>): SignupSearch => {
     const raw = typeof search["plan"] === "string" ? search["plan"].toLowerCase() : undefined;
-    if (raw === "starter" || raw === "fleet" || raw === "pilot" || raw === "enterprise") {
+    if (raw === "basic" || raw === "pro") {
       return { plan: raw };
     }
+    // Legacy bookmarks
+    if (raw === "pilot" || raw === "starter") return { plan: "basic" };
+    if (raw === "fleet" || raw === "enterprise") return { plan: "pro" };
     return {};
   },
   head: () => ({ meta: [{ title: "Daftar — JagaPanen" }] }),
@@ -23,7 +26,7 @@ export const Route = createFileRoute("/signup")({
 
 function SignupPage() {
   const navigate = useNavigate();
-  const { plan = "pilot" } = Route.useSearch();
+  const { plan = "basic" } = Route.useSearch();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
@@ -41,9 +44,9 @@ function SignupPage() {
         organization_name: orgName.trim() || "Organisasi Saya",
         ...(trimmedName ? { full_name: trimmedName } : {}),
       });
-      toast.success("Akun Pilot dibuat");
-      if (plan === "starter" || plan === "fleet") {
-        await navigate({ to: "/app/settings/billing", search: { plan } });
+      toast.success("Akun Basic dibuat");
+      if (plan === "pro") {
+        await navigate({ to: "/app/settings/billing", search: { plan: "pro" } });
       } else {
         await navigate({ to: "/app/scenarios" });
       }
@@ -66,7 +69,7 @@ function SignupPage() {
         <p className="mt-1 text-sm text-zinc-500">
           Memulai <strong className="capitalize">{plan}</strong> — setelah daftar Anda masuk ke
           workspace <code className="text-xs">/app</code>
-          {plan === "starter" || plan === "fleet" ? " lalu checkout di Billing" : ""}.
+          {plan === "pro" ? " lalu checkout Pro di Billing" : ""}.
         </p>
         <form onSubmit={onSubmit} className="mt-6 space-y-3">
           <div className="space-y-1.5">
@@ -93,10 +96,10 @@ function SignupPage() {
             <Input
               id="email"
               type="email"
-              autoComplete="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
             />
           </div>
           <div className="space-y-1.5">
@@ -104,33 +107,28 @@ function SignupPage() {
             <Input
               id="password"
               type="password"
-              autoComplete="new-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={8}
+              autoComplete="new-password"
             />
           </div>
           <Button
             type="submit"
-            disabled={busy}
             className="w-full bg-emerald-700 hover:bg-emerald-800"
+            disabled={busy}
           >
-            {busy ? "Mendaftar..." : "Daftar & masuk ke /app"}
+            {busy ? "Mendaftar…" : "Daftar"}
           </Button>
         </form>
         <p className="mt-4 text-center text-xs text-zinc-500">
           Sudah punya akun?{" "}
-          <Link to="/login" className="font-medium text-emerald-700 hover:underline">
-            Masuk
-          </Link>
-          {" · "}
           <Link
-            to="/demo"
-            search={{ tab: "comparison" }}
-            className="font-medium text-emerald-700 hover:underline"
+            to="/login"
+            className="font-medium text-emerald-800 underline-offset-2 hover:underline"
           >
-            Coba demo dulu
+            Masuk
           </Link>
         </p>
       </div>

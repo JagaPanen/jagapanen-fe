@@ -32,39 +32,21 @@ const PRICING = [
     highlight: false,
   },
   {
-    name: "Pilot",
-    price: "Gratis 14 hari",
-    blurb: "1 seat · 25 run optimasi · laporan ber-watermark.",
+    name: "Basic",
+    price: "Gratis",
+    blurb: "Workspace org · 50 run optimasi / bulan · skenario tersimpan.",
     demo: false,
-    plan: "pilot" as const,
-    label: "Mulai Pilot",
+    plan: "basic" as const,
+    label: "Daftar Basic",
     highlight: true,
   },
   {
-    name: "Starter",
-    price: "IDR 499rb/bln",
-    blurb: "3 seats · 5 kendaraan · 200 run/bulan · PDF export.",
+    name: "Pro",
+    price: "IDR 999rb/bln",
+    blurb: "2.000 run / bulan · full dashboard · prioritas dukungan.",
     demo: false,
-    plan: "starter" as const,
-    label: "Daftar → Starter",
-    highlight: false,
-  },
-  {
-    name: "Fleet",
-    price: "IDR 1,5jt/bln",
-    blurb: "10 seats · 25 kendaraan · 1.000 run/bulan.",
-    demo: false,
-    plan: "fleet" as const,
-    label: "Daftar → Fleet",
-    highlight: false,
-  },
-  {
-    name: "Enterprise",
-    price: "Custom",
-    blurb: "SSO, SLA, integrasi fleet dan ERP sesuai kebutuhan.",
-    demo: false,
-    plan: "enterprise" as const,
-    label: "Bicara sales",
+    plan: "pro" as const,
+    label: "Daftar → Pro",
     highlight: false,
   },
 ];
@@ -343,8 +325,10 @@ export function LandingPage() {
           <h2 className="text-3xl font-semibold sm:text-4xl" style={display}>
             Harga sederhana
           </h2>
-          <p className="mt-2 text-(--jp-muted)">Guest, Pilot, Starter, Fleet, Enterprise.</p>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+          <p className="mt-2 text-(--jp-muted)">
+            Guest demo, lalu Basic atau Pro untuk organisasi.
+          </p>
+          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {PRICING.map((plan) => (
               <div
                 key={plan.name}
@@ -374,12 +358,8 @@ export function LandingPage() {
                     <Link to="/demo" search={{ tab: "comparison" }}>
                       {plan.label}
                     </Link>
-                  ) : "plan" in plan && plan.plan === "enterprise" ? (
-                    <a href="mailto:sales@jagapanen.id?subject=JagaPanen%20Enterprise">
-                      {plan.label}
-                    </a>
                   ) : (
-                    <Link to="/signup" search={{ plan: "plan" in plan ? plan.plan : "pilot" }}>
+                    <Link to="/signup" search={{ plan: "plan" in plan ? plan.plan : "basic" }}>
                       {plan.label}
                     </Link>
                   )}
