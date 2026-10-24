@@ -2,7 +2,7 @@ import { useEffect, useMemo } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
-import { Truck, Store, Sprout, Clock } from "lucide-react";
+import { Car, Flag, Sprout, Clock } from "lucide-react";
 import {
   VEHICLE,
   LOCATION_COORDINATES,
@@ -24,37 +24,40 @@ const CLASS_COLORS: Record<Harvest["kelas"], string> = {
   E: "#2563eb", // blue
 };
 
-function poolIcon() {
+/** Inline Lucide-style SVGs for Leaflet divIcon (no React in marker HTML). */
+const CAR_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>`;
+
+const FLAG_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" x2="4" y1="22" y2="15"/></svg>`;
+
+function startCarIcon() {
   const html = `<div style="
-    width:34px;height:34px;border-radius:50%;
+    width:38px;height:38px;border-radius:50%;
     background:#0f172a;border:3px solid #ffffff;
-    color:#ffffff;font-size:12px;font-weight:800;font-family:ui-sans-serif,system-ui;
     display:flex;align-items:center;justify-content:center;
-    box-shadow:0 2px 6px rgba(0,0,0,.45);
-  ">P</div>`;
+    box-shadow:0 2px 8px rgba(0,0,0,.45);
+  ">${CAR_SVG}</div>`;
   return L.divIcon({
     html,
-    className: "jagapanen-pin-pool",
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
-    popupAnchor: [0, -18],
+    className: "jagapanen-pin-start",
+    iconSize: [38, 38],
+    iconAnchor: [19, 19],
+    popupAnchor: [0, -20],
   });
 }
 
-function marketIcon() {
+function finishFlagIcon() {
   const html = `<div style="
-    width:34px;height:34px;border-radius:50%;
+    width:38px;height:38px;border-radius:50%;
     background:#059669;border:3px solid #ffffff;
-    color:#ffffff;font-size:12px;font-weight:800;font-family:ui-sans-serif,system-ui;
     display:flex;align-items:center;justify-content:center;
-    box-shadow:0 2px 6px rgba(0,0,0,.45);
-  ">M</div>`;
+    box-shadow:0 2px 8px rgba(0,0,0,.45);
+  ">${FLAG_SVG}</div>`;
   return L.divIcon({
     html,
-    className: "jagapanen-pin-market",
-    iconSize: [34, 34],
-    iconAnchor: [17, 17],
-    popupAnchor: [0, -18],
+    className: "jagapanen-pin-finish",
+    iconSize: [38, 38],
+    iconAnchor: [19, 19],
+    popupAnchor: [0, -20],
   });
 }
 
@@ -177,7 +180,27 @@ export function RouteMapLeaflet({
     [routeGeometries?.spoilage],
   );
 
-  // Prefer API geometry (incl. ferry ports); fall back to ordered harvest segments
+  const fallbackDestCoords = useMemo(() => {
+    const pts: [number, number][] = [];
+    const seen = new Set<string>();
+    for (const h of [...costSequence, ...spoilageSequence, ...balancedSequence, ...harvests]) {
+      if (
+        typeof h.destinationLat !== "number" ||
+        typeof h.destinationLng !== "number" ||
+        !Number.isFinite(h.destinationLat) ||
+        !Number.isFinite(h.destinationLng)
+      ) {
+        continue;
+      }
+      const key = `${h.destinationLat.toFixed(4)},${h.destinationLng.toFixed(4)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      pts.push([h.destinationLat, h.destinationLng]);
+    }
+    return pts.length > 0 ? pts : [MARKET_COORD];
+  }, [costSequence, spoilageSequence, balancedSequence, harvests]);
+
+  // Prefer API geometry; fall back to pickups then each order's destination
   const costPositions = useMemo(
     () =>
       apiBaseline && apiBaseline.length > 1
@@ -185,18 +208,18 @@ export function RouteMapLeaflet({
         : [
             POOL_COORD,
             ...costSequence.map((h) => [h.lat, h.lng] as [number, number]),
-            MARKET_COORD,
+            ...fallbackDestCoords,
           ],
-    [apiBaseline, costSequence],
+    [apiBaseline, costSequence, fallbackDestCoords],
   );
 
   const balancedPositions = useMemo(
     () => [
       POOL_COORD,
       ...balancedSequence.map((h) => [h.lat, h.lng] as [number, number]),
-      MARKET_COORD,
+      ...fallbackDestCoords,
     ],
-    [balancedSequence],
+    [balancedSequence, fallbackDestCoords],
   );
 
   const spoilagePositions = useMemo(
@@ -206,20 +229,83 @@ export function RouteMapLeaflet({
         : [
             POOL_COORD,
             ...spoilageSequence.map((h) => [h.lat, h.lng] as [number, number]),
-            MARKET_COORD,
+            ...fallbackDestCoords,
           ],
-    [apiSpoilage, spoilageSequence],
+    [apiSpoilage, spoilageSequence, fallbackDestCoords],
   );
 
-  // Fit to harvests + drawn polylines (Sumatra/ferry included)
+  // Fit to harvests + destinations + drawn polylines
   const allCoords = useMemo<[number, number][]>(() => {
+    const destPts = harvests
+      .filter(
+        (h) =>
+          typeof h.destinationLat === "number" &&
+          typeof h.destinationLng === "number" &&
+          Number.isFinite(h.destinationLat) &&
+          Number.isFinite(h.destinationLng),
+      )
+      .map((h) => [h.destinationLat!, h.destinationLng!] as [number, number]);
     const pts: [number, number][] = [
       ...harvests.map((h) => [h.lat, h.lng] as [number, number]),
+      ...destPts,
       ...costPositions,
       ...spoilagePositions,
     ];
     return pts.length > 0 ? pts : [POOL_COORD, MARKET_COORD];
   }, [harvests, costPositions, spoilagePositions]);
+
+  const activePositions = useMemo(() => {
+    if (currentMode === "cost") return costPositions;
+    if (currentMode === "balanced") return balancedPositions;
+    return spoilagePositions;
+  }, [currentMode, costPositions, balancedPositions, spoilagePositions]);
+
+  const startCoord = useMemo<[number, number]>(
+    () => (activePositions.length > 0 ? activePositions[0]! : POOL_COORD),
+    [activePositions],
+  );
+
+  /** Unique order destinations (user-editable) — not a single static market. */
+  const destinationMarkers = useMemo(() => {
+    const seen = new Set<string>();
+    const markers: { key: string; lat: number; lng: number; name: string }[] = [];
+    for (const h of harvests) {
+      if (
+        typeof h.destinationLat !== "number" ||
+        typeof h.destinationLng !== "number" ||
+        !Number.isFinite(h.destinationLat) ||
+        !Number.isFinite(h.destinationLng)
+      ) {
+        continue;
+      }
+      const key = `${h.destinationLat.toFixed(4)},${h.destinationLng.toFixed(4)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      markers.push({
+        key,
+        lat: h.destinationLat,
+        lng: h.destinationLng,
+        name: h.destinationName || "Tujuan distribusi",
+      });
+    }
+    if (markers.length === 0 && activePositions.length > 1) {
+      const last = activePositions[activePositions.length - 1]!;
+      markers.push({
+        key: "route-end",
+        lat: last[0],
+        lng: last[1],
+        name: "Titik akhir rute",
+      });
+    } else if (markers.length === 0) {
+      markers.push({
+        key: "fallback-market",
+        lat: MARKET_COORD[0],
+        lng: MARKET_COORD[1],
+        name: VEHICLE.tujuan,
+      });
+    }
+    return markers;
+  }, [harvests, activePositions]);
 
   const activeOrderMap = useMemo(() => {
     const activeList =
@@ -287,29 +373,31 @@ export function RouteMapLeaflet({
           />
         )}
 
-        {/* Marker Statis: Pool Koperasi Tani */}
-        <Marker position={POOL_COORD} icon={poolIcon()}>
+        {/* Start: car logo at route origin */}
+        <Marker position={startCoord} icon={startCarIcon()}>
           <Popup>
             <div style={{ fontFamily: "ui-sans-serif, system-ui", minWidth: 180 }}>
-              <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>{VEHICLE.pool}</p>
+              <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>Start · {VEHICLE.pool}</p>
               <p style={{ margin: "3px 0 0", fontSize: 11, color: "#52525b" }}>
-                Lokasi Awal Armada · Colt L300 (Maks 1.000 kg)
+                Titik awal armada pada rute aktif
               </p>
             </div>
           </Popup>
         </Marker>
 
-        {/* Marker Statis: Pasar Induk Giwangan */}
-        <Marker position={MARKET_COORD} icon={marketIcon()}>
-          <Popup>
-            <div style={{ fontFamily: "ui-sans-serif, system-ui", minWidth: 180 }}>
-              <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>{VEHICLE.tujuan}</p>
-              <p style={{ margin: "3px 0 0", fontSize: 11, color: "#52525b" }}>
-                Yogyakarta · Titik Distribusi Akhir
-              </p>
-            </div>
-          </Popup>
-        </Marker>
+        {/* Finish flags: one per unique order destination */}
+        {destinationMarkers.map((d) => (
+          <Marker key={`finish-${d.key}`} position={[d.lat, d.lng]} icon={finishFlagIcon()}>
+            <Popup>
+              <div style={{ fontFamily: "ui-sans-serif, system-ui", minWidth: 180 }}>
+                <p style={{ margin: 0, fontWeight: 700, fontSize: 13 }}>Finish · {d.name}</p>
+                <p style={{ margin: "3px 0 0", fontSize: 11, color: "#52525b" }}>
+                  Tujuan drop-off pesanan (dapat diubah di Edit Panen)
+                </p>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
 
         {/* Marker Dinamis dari Array State harvests */}
         {harvests.map((h) => {
@@ -458,13 +546,13 @@ export function RouteMapLeaflet({
         </div>
         <div className="mt-2 flex items-center gap-3 border-t border-slate-100 pt-1.5 text-[10px] text-zinc-500">
           <span className="flex items-center gap-1">
-            <Truck className="h-3 w-3" /> Pool
+            <Car className="h-3 w-3" /> Start
           </span>
           <span className="flex items-center gap-1">
             <Sprout className="h-3 w-3" /> Titik Panen ({harvests.length})
           </span>
           <span className="flex items-center gap-1">
-            <Store className="h-3 w-3" /> Pasar
+            <Flag className="h-3 w-3" /> Finish
           </span>
         </div>
       </div>
