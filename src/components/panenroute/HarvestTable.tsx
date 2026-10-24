@@ -8,7 +8,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Pencil, Trash2, Loader2 } from "lucide-react";
+import { Search, Pencil, Trash2, Loader2, Flag, MapPin } from "lucide-react";
 import { urgencyScore, type Harvest } from "./data";
 import { EditHarvestDialog } from "./Dialogs";
 
@@ -36,7 +36,9 @@ export function HarvestTable({
       harvests.filter(
         (h) =>
           (kelas === "all" || h.kelas === kelas) &&
-          (h.komoditas + h.lokasi + h.id).toLowerCase().includes(q.toLowerCase()),
+          (h.komoditas + h.lokasi + (h.destinationName ?? "") + h.id)
+            .toLowerCase()
+            .includes(q.toLowerCase()),
       ),
     [harvests, q, kelas],
   );
@@ -75,13 +77,14 @@ export function HarvestTable({
       </div>
 
       <div className="w-full overflow-x-auto [scrollbar-width:thin]">
-        <table className="w-full min-w-[760px] text-left text-[12px]">
+        <table className="w-full min-w-[860px] text-left text-[12px]">
           <thead className="bg-slate-50 text-[10px] uppercase tracking-wide text-zinc-500">
             <tr>
               {[
                 "Harvest ID",
                 "Komoditas",
-                "Lokasi",
+                "Jemput",
+                "Tujuan Order",
                 "Volume",
                 "Jam Sejak Panen",
                 "Shelf Life",
@@ -99,7 +102,7 @@ export function HarvestTable({
           <tbody>
             {isLoading && harvests.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-4 py-12 text-center text-zinc-500">
+                <td colSpan={11} className="px-4 py-12 text-center text-zinc-500">
                   <div className="flex flex-col items-center justify-center gap-2.5">
                     <div className="flex items-center gap-2 text-emerald-700 font-medium text-xs">
                       <Loader2 className="h-4 w-4 animate-spin text-emerald-600 shrink-0" />
@@ -114,7 +117,7 @@ export function HarvestTable({
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-4 py-8 text-center text-zinc-500">
+                <td colSpan={11} className="px-4 py-8 text-center text-zinc-500">
                   Tidak ada data panen yang cocok.
                 </td>
               </tr>
@@ -137,8 +140,36 @@ export function HarvestTable({
                 return (
                   <tr key={h.id} className="border-t border-slate-100 hover:bg-slate-50/70">
                     <td className="px-4 py-2 font-mono text-zinc-500">{h.id}</td>
-                    <td className="px-4 py-2 font-medium text-zinc-900">{h.komoditas}</td>
-                    <td className="px-4 py-2 text-zinc-600">{h.lokasi}</td>
+                    <td className="px-4 py-2">
+                      <p className="font-medium text-zinc-900">{h.komoditas}</p>
+                      <p className="mt-0.5 flex items-start gap-1 text-[10px] leading-snug text-emerald-700">
+                        <Flag className="mt-0.5 h-3 w-3 shrink-0" />
+                        <span>
+                          Tujuan:{" "}
+                          {h.destinationName?.trim() || (
+                            <span className="italic text-zinc-400">belum diisi</span>
+                          )}
+                        </span>
+                      </p>
+                    </td>
+                    <td className="px-4 py-2 text-zinc-600">
+                      <span className="inline-flex items-start gap-1">
+                        <MapPin className="mt-0.5 h-3 w-3 shrink-0 text-zinc-400" />
+                        {h.lokasi}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2">
+                      {h.destinationName?.trim() ? (
+                        <span className="inline-flex items-start gap-1.5 font-medium text-zinc-800">
+                          <Flag className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+                          {h.destinationName}
+                        </span>
+                      ) : (
+                        <span className="text-zinc-400 italic">
+                          Belum diisi — edit untuk set tujuan
+                        </span>
+                      )}
+                    </td>
                     <td className="px-4 py-2 text-zinc-900">{h.volume} kg</td>
                     <td className="px-4 py-2 text-zinc-600">{h.jamSejakPanen} jam</td>
                     <td className="px-4 py-2 text-zinc-600">
@@ -187,7 +218,7 @@ export function HarvestTable({
                         <button
                           type="button"
                           onClick={() => setEditingHarvest(h)}
-                          title="Edit Data Panen & Ganti Lokasi"
+                          title="Edit jemput & tujuan drop-off"
                           className="rounded p-1 text-zinc-500 hover:bg-slate-100 hover:text-zinc-800 transition-colors"
                         >
                           <Pencil className="h-3.5 w-3.5" />
