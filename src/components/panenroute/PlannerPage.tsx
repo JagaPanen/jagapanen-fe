@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Database, RefreshCw, Layers, Play, FileDown } from "lucide-react";
+import { ShieldCheck, Database, Play, FileDown } from "lucide-react";
 import { RouteMap } from "@/components/panenroute/RouteMap";
 import { HarvestTable } from "@/components/panenroute/HarvestTable";
 import { FormulaDialog, AddHarvestDialog } from "@/components/panenroute/Dialogs";
@@ -45,14 +45,13 @@ export function PlannerPage({
   scenarioId: scenarioIdProp,
   initialRunId,
   forceGuest = false,
-  activeTab = "comparison",
-  onTabChange,
 }: {
   mode?: "guest" | "org";
   scenarioId?: string;
   /** Org history replay — loads run into ComparisonView */
   initialRunId?: string | undefined;
   forceGuest?: boolean;
+  /** Route search compat only — layout shows comparison + map on one page. */
   activeTab?: "comparison" | "map";
   onTabChange?: (tab: "comparison" | "map") => void;
 }) {
@@ -81,16 +80,9 @@ export function PlannerPage({
   const [signupReason, setSignupReason] = useState<"limit" | "export">("limit");
   const [lastRunId, setLastRunId] = useState<string | null>(initialRunId ?? null);
 
-  const handleTabChange = (newTab: "comparison" | "map") => {
-    onTabChange?.(newTab);
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("jagapanen_active_tab", newTab);
-      } catch {
-        // Safe localStorage
-      }
-    }
-  };
+  const hasRouteResult =
+    (comparisonData?.baseline?.stops?.length ?? 0) > 0 ||
+    (comparisonData?.jagaPanen?.stops?.length ?? 0) > 0;
 
   const clearPlanningDerived = useCallback(() => {
     setRisk(null);
@@ -400,8 +392,7 @@ export function PlannerPage({
           setSignupOpen(true);
         }
       }
-      toast.success("Rute berhasil dihitung — membuka peta");
-      handleTabChange("map");
+      toast.success("Rute berhasil dihitung — komparasi & peta siap");
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
       console.error("[JagaPanen] Optimasi gagal:", e);
@@ -529,33 +520,6 @@ export function PlannerPage({
       <div className="sticky top-0 z-10 w-full border-b border-slate-200 bg-white/95 px-3 py-2 backdrop-blur sm:px-5 sm:py-2.5">
         <div className="mx-auto flex w-full max-w-[1600px] flex-col justify-between gap-2.5 lg:flex-row lg:items-center">
           <div className="flex w-full flex-col items-stretch gap-2 sm:flex-row sm:items-center lg:w-auto">
-            <div className="flex w-full rounded-lg border border-slate-200 bg-slate-50 p-0.5 sm:w-auto">
-              <button
-                onClick={() => handleTabChange("comparison")}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors sm:flex-none sm:px-3 ${
-                  activeTab === "comparison"
-                    ? "bg-white text-zinc-900 shadow-xs"
-                    : "text-zinc-500 hover:text-zinc-800"
-                }`}
-              >
-                <Layers className="h-3.5 w-3.5 shrink-0" />
-                <span className="hidden sm:inline">Komparasi Skenario</span>
-                <span className="sm:hidden">Komparasi</span>
-              </button>
-              <button
-                onClick={() => handleTabChange("map")}
-                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors sm:flex-none sm:px-3 ${
-                  activeTab === "map"
-                    ? "bg-white text-zinc-900 shadow-xs"
-                    : "text-zinc-500 hover:text-zinc-800"
-                }`}
-              >
-                <RefreshCw className="h-3.5 w-3.5 shrink-0" />
-                <span className="hidden sm:inline">Peta Penjemputan</span>
-                <span className="sm:hidden">Peta</span>
-              </button>
-            </div>
-
             <Button
               size="sm"
               onClick={handleRunOptimization}
@@ -656,14 +620,10 @@ export function PlannerPage({
           </div>
         ) : null}
 
-        {activeTab === "comparison" ? (
-          <ComparisonView data={comparisonData} isLoading={isHarvestsLoading || isCalculating} />
-        ) : null}
+        {/* Same-page layout: impact/komparasi then map (no tab switch) */}
+        <ComparisonView data={comparisonData} isLoading={isHarvestsLoading || isCalculating} />
 
-        {/* Map always after a successful run (and when Map tab is active) so routes are visible */}
-        {activeTab === "map" ||
-        (comparisonData?.baseline?.stops?.length ?? 0) > 0 ||
-        (comparisonData?.jagaPanen?.stops?.length ?? 0) > 0 ? (
+        {hasRouteResult ? (
           <div className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xs">
             <RouteMap
               harvests={harvests}
