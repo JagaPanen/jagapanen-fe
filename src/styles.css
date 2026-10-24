@@ -133,7 +133,9 @@
 }
 
 @layer base {
-  *, ::after, ::before {
+  *,
+  ::after,
+  ::before {
     border-color: var(--color-border);
     box-sizing: border-box;
   }
@@ -156,3 +158,27 @@
   }
 }
 
+/* Marketing landing tokens (Fraunces + Source Sans 3 loaded in root head) */
+.jp-landing {
+  --jp-display: "Fraunces", Georgia, serif;
+  --jp-sans: "Source Sans 3", "Segoe UI", sans-serif;
+  --jp-ink: #14241c;
+  --jp-muted: #5a6b61;
+  --jp-paper: #f7faf7;
+  --jp-line: #d5e0d8;
+  --jp-leaf: #1f6b45;
+  --jp-leaf-deep: #145234;
+  --jp-sun: #f0d078;
+  font-family: var(--jp-sans);
+}
+
+@keyframes jp-draw {
+  from {
+    stroke-dasharray: 600;
+    stroke-dashoffset: 600;
+  }
+  to {
+    stroke-dasharray: 600;
+    stroke-dashoffset: 0;
+  }
+}
