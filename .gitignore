@@ -15,9 +15,14 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
+
+# Local env (never commit secrets / machine-specific URLs)
 .env
-.env.local
+.env.*
 !.env.example
+!.env.docker
+!.env.production
+
 postman/
 *.postman_collection.json
 
@@ -25,11 +30,21 @@ postman/
 .wrangler/
 .dev.vars
 
+# Test / build caches
+coverage
+playwright-report
+test-results
+*.tsbuildinfo
+
+# Lovable / local tooling metadata
+.lovable/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
 *.suo
 *.ntvs*
 *.njsproj
