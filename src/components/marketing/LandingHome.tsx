@@ -42,7 +42,7 @@ const PRICING = [
   },
   {
     name: "Pro",
-    price: "IDR 999rb/bln",
+    price: "IDR 49rb/bln",
     blurb: "2.000 run / bulan · full dashboard · prioritas dukungan.",
     demo: false,
     plan: "pro" as const,

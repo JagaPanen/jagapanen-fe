@@ -155,7 +155,7 @@ function BillingPage() {
           Basic gratis dengan kuota bulanan. Pro menaikkan limit run. Mode stub: aktivasi langsung.
         </p>
         <div className="mt-4 max-w-md rounded-md border border-slate-200 p-3">
-          <p className="text-sm font-medium">Pro</p>
+          <p className="text-sm font-medium">Pro — IDR 49rb/bln</p>
           <p className="mt-1 text-xs text-zinc-500">
             2.000 run / bulan · full dashboard · prioritas support
           </p>
