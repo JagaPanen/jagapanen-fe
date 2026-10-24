@@ -187,9 +187,7 @@ export const DEFAULT_DESTINATIONS: DestinationOption[] = [
   },
 ];
 
-export function unsetDestination(
-  mapCenter: [number, number] = DEST_MAP_CENTER,
-): DestinationOption {
+export function unsetDestination(mapCenter: [number, number] = DEST_MAP_CENTER): DestinationOption {
   return {
     id: UNSET_DESTINATION_ID,
     name: "",
@@ -208,7 +206,13 @@ export function destinationLabel(d: DestinationOption): string {
   if (d.id === UNSET_DESTINATION_ID) return "Pilih tujuan…";
   if (d.id === CUSTOM_DESTINATION_ID) return d.name.trim() || "Tujuan kustom";
   const kindTag =
-    d.kind === "pasar" ? "Pasar" : d.kind === "desa" ? "Desa sentra" : d.kind === "gudang" ? "Gudang" : null;
+    d.kind === "pasar"
+      ? "Pasar"
+      : d.kind === "desa"
+        ? "Desa sentra"
+        : d.kind === "gudang"
+          ? "Gudang"
+          : null;
   const place = d.region ? `${d.name} (${d.region})` : d.name;
   return kindTag ? `${kindTag} · ${place}` : place;
 }
