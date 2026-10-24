@@ -18,7 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Info, Plus, MapPin } from "lucide-react";
+import { Info, Plus } from "lucide-react";
 import { toast } from "sonner";
 import {
   createHarvest,
@@ -28,7 +28,14 @@ import {
   type Commodity,
   type HarvestCreatePayload,
 } from "@/services/api";
-import { LOCATION_COORDINATES, LOCATION_PRESETS, DEFAULT_COORDINATE, type Harvest } from "./data";
+import { type Harvest, LOCATION_PRESETS } from "@/components/panenroute/data";
+import { DestinationSelect } from "@/components/places/DestinationSelect";
+import {
+  PickupLocationField,
+  pickupFromHarvestLokasi,
+  pickupFromPreset,
+} from "@/components/places/PickupLocationField";
+import { DEFAULT_DESTINATIONS, type DestinationOption, type PickupPlaceValue } from "@/lib/places";
 
 export function FormulaDialog() {
   return (
@@ -112,12 +119,6 @@ const CLASS_LABELS: Record<Harvest["kelas"], string> = {
   E: "Pangan Pokok (Tahan Lama)",
 };
 
-const DESTINATION_COORDINATES: Record<string, { lat: number; lng: number }> = {
-  "Pasar Induk Caringin": { lat: -6.92, lng: 107.61 },
-  "Pasar Induk Giwangan": { lat: -7.834, lng: 110.3912 },
-  "Gudang Sentra Koperasi": { lat: -7.502, lng: 110.2185 },
-};
-
 function applyCommodityFields(
   commodity: Commodity,
   setters: {
@@ -152,15 +153,8 @@ export function AddHarvestDialog({
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [commodityId, setCommodityId] = useState("");
   const [komoditas, setKomoditas] = useState("");
-  const [presetLocation, setPresetLocation] = useState(
-    LOCATION_PRESETS[0] || "Titik A — Desa Sawangan",
-  );
-  const [customLocationName, setCustomLocationName] = useState("");
-  const [lat, setLat] = useState<number>(
-    LOCATION_COORDINATES[LOCATION_PRESETS[0] || ""]?.[0] || DEFAULT_COORDINATE[0],
-  );
-  const [lng, setLng] = useState<number>(
-    LOCATION_COORDINATES[LOCATION_PRESETS[0] || ""]?.[1] || DEFAULT_COORDINATE[1],
+  const [pickup, setPickup] = useState<PickupPlaceValue>(() =>
+    pickupFromPreset(LOCATION_PRESETS[0] || "Titik A — Desa Sawangan"),
   );
   const [volume, setVolume] = useState("300");
   const [jamSejakPanen, setJamSejakPanen] = useState("6");
@@ -168,7 +162,7 @@ export function AddHarvestDialog({
   const [kelas, setKelas] = useState<Harvest["kelas"]>("A");
   const [nilaiPerKg, setNilaiPerKg] = useState("15000");
   const [initialCondition, setInitialCondition] = useState("fresh");
-  const [destination, setDestination] = useState("Pasar Induk Caringin");
+  const [destination, setDestination] = useState<DestinationOption>(DEFAULT_DESTINATIONS[0]!);
 
   useEffect(() => {
     if (!open) return;
@@ -213,38 +207,34 @@ export function AddHarvestDialog({
     });
   };
 
-  const handleLocationChange = (val: string) => {
-    setPresetLocation(val);
-    if (val !== "custom") {
-      const coords = LOCATION_COORDINATES[val];
-      if (coords) {
-        setLat(coords[0]);
-        setLng(coords[1]);
-      }
-    }
-  };
-
   const submit = async () => {
     if (!komoditas || !volume || !commodityId) return;
+    if (pickup.presetKey === "custom" && !pickup.name.trim()) {
+      toast.error("Isi nama lokasi panen");
+      return;
+    }
+    if (destination.id === "custom" && !destination.name.trim()) {
+      toast.error("Isi nama tujuan distribusi");
+      return;
+    }
     setIsSubmitting(true);
     const finalLocation =
-      presetLocation === "custom" ? customLocationName || "Lokasi Kustom" : presetLocation;
+      pickup.presetKey === "custom" ? pickup.name.trim() || "Lokasi Kustom" : pickup.name;
     const hours = Number(jamSejakPanen) || 0;
     const shelf = Number(shelfLife) || 48;
     const factor =
       initialCondition === "critical" ? 1.6 : initialCondition === "slightly_bruised" ? 1.3 : 1.0;
-    const destCoord = DESTINATION_COORDINATES[destination] || { lat: -6.92, lng: 107.61 };
 
     const payload: HarvestCreatePayload = {
       commodity_id: commodityId,
       label: `${komoditas} (${finalLocation})`,
-      location_lat: Number(lat) || DEFAULT_COORDINATE[0],
-      location_lng: Number(lng) || DEFAULT_COORDINATE[1],
+      location_lat: pickup.lat,
+      location_lng: pickup.lng,
       volume_kg: Number(volume),
       harvested_at: new Date(Date.now() - hours * 3600 * 1000).toISOString(),
-      destination_lat: destCoord.lat,
-      destination_lng: destCoord.lng,
-      destination_name: destination,
+      destination_lat: destination.lat,
+      destination_lng: destination.lng,
+      destination_name: destination.name,
       handling_factor: factor,
     };
 
@@ -258,8 +248,8 @@ export function AddHarvestDialog({
       kelas,
       kelasLabel: CLASS_LABELS[kelas] || `Kelas ${kelas}`,
       nilaiPerKg: Number(nilaiPerKg) || 15000,
-      lat: Number(lat) || DEFAULT_COORDINATE[0],
-      lng: Number(lng) || DEFAULT_COORDINATE[1],
+      lat: pickup.lat,
+      lng: pickup.lng,
       urgency: Math.min(100, Math.round((hours / shelf) * 100)),
     };
 
@@ -358,61 +348,11 @@ export function AddHarvestDialog({
             </Select>
           </div>
 
-          <div className="col-span-1 sm:col-span-2 space-y-1.5">
-            <Label className="text-xs text-zinc-600">Lokasi Titik Panen (Penjemputan)</Label>
-            <Select value={presetLocation} onValueChange={handleLocationChange}>
-              <SelectTrigger className="border-slate-200 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {LOCATION_PRESETS.map((loc) => (
-                  <SelectItem key={loc} value={loc} className="text-xs">
-                    {loc}
-                  </SelectItem>
-                ))}
-                <SelectItem value="custom" className="text-xs font-semibold text-emerald-700">
-                  + Lokasi Kustom (Input Koordinat)
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {presetLocation === "custom" ? (
-            <>
-              <div className="col-span-1 sm:col-span-2">
-                <Field
-                  label="Nama Lokasi Kustom"
-                  value={customLocationName}
-                  onChange={setCustomLocationName}
-                  placeholder="Nama sentra / desa pertanian"
-                />
-              </div>
-              <Field
-                label="Latitude"
-                value={String(lat)}
-                onChange={(v) => setLat(Number(v) || 0)}
-                type="number"
-                placeholder="-7.5020"
-              />
-              <Field
-                label="Longitude"
-                value={String(lng)}
-                onChange={(v) => setLng(Number(v) || 0)}
-                type="number"
-                placeholder="110.2185"
-              />
-            </>
-          ) : (
-            <div className="col-span-1 sm:col-span-2 rounded border border-slate-100 bg-slate-50 px-3 py-1.5 text-[11px] text-zinc-600 flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-              <span className="truncate">
-                Koordinat Terpetakan:{" "}
-                <code className="font-mono font-semibold">
-                  {lat}, {lng}
-                </code>
-              </span>
-            </div>
-          )}
+          <PickupLocationField
+            value={pickup}
+            onChange={setPickup}
+            label="Lokasi titik panen (penjemputan)"
+          />
 
           <Field
             label="Volume Muatan (kg)"
@@ -443,25 +383,13 @@ export function AddHarvestDialog({
             placeholder="Misal: 15000"
           />
 
-          <div className="col-span-1 sm:col-span-2 space-y-1.5">
-            <Label className="text-xs text-zinc-600">Tujuan Distribusi (Pasar / Gudang)</Label>
-            <Select value={destination} onValueChange={setDestination}>
-              <SelectTrigger className="border-slate-200 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Pasar Induk Caringin" className="text-xs">
-                  Pasar Induk Caringin (Bandung)
-                </SelectItem>
-                <SelectItem value="Pasar Induk Giwangan" className="text-xs">
-                  Pasar Induk Giwangan (Yogyakarta)
-                </SelectItem>
-                <SelectItem value="Gudang Sentra Koperasi" className="text-xs">
-                  Gudang Sentra Koperasi Tani
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <DestinationSelect
+            className="col-span-1 sm:col-span-2"
+            value={destination}
+            onChange={setDestination}
+            allowCustom
+            label="Tujuan distribusi (pasar / gudang)"
+          />
         </div>
         <DialogFooter>
           <Button
@@ -493,10 +421,9 @@ export function EditHarvestDialog({
   isBackendConnected?: boolean;
 }) {
   const [komoditas, setKomoditas] = useState("");
-  const [presetLocation, setPresetLocation] = useState("");
-  const [customLocationName, setCustomLocationName] = useState("");
-  const [lat, setLat] = useState<number>(DEFAULT_COORDINATE[0]);
-  const [lng, setLng] = useState<number>(DEFAULT_COORDINATE[1]);
+  const [pickup, setPickup] = useState<PickupPlaceValue>(() =>
+    pickupFromPreset(LOCATION_PRESETS[0] || "Titik A — Desa Sawangan"),
+  );
   const [volume, setVolume] = useState("");
   const [jamSejakPanen, setJamSejakPanen] = useState("");
   const [shelfLife, setShelfLife] = useState("48");
@@ -512,34 +439,18 @@ export function EditHarvestDialog({
       setShelfLife(String(harvest.shelfLife));
       setKelas(harvest.kelas);
       setNilaiPerKg(String(harvest.nilaiPerKg));
-      setLat(harvest.lat);
-      setLng(harvest.lng);
-
-      if (LOCATION_PRESETS.includes(harvest.lokasi)) {
-        setPresetLocation(harvest.lokasi);
-        setCustomLocationName("");
-      } else {
-        setPresetLocation("custom");
-        setCustomLocationName(harvest.lokasi);
-      }
+      setPickup(pickupFromHarvestLokasi(harvest.lokasi, harvest.lat, harvest.lng));
     }
   }, [harvest]);
 
-  const handleLocationChange = (val: string) => {
-    setPresetLocation(val);
-    if (val !== "custom") {
-      const coords = LOCATION_COORDINATES[val];
-      if (coords) {
-        setLat(coords[0]);
-        setLng(coords[1]);
-      }
-    }
-  };
-
   const submit = async () => {
     if (!harvest || !komoditas || !volume) return;
+    if (pickup.presetKey === "custom" && !pickup.name.trim()) {
+      toast.error("Isi nama lokasi panen");
+      return;
+    }
     const finalLocation =
-      presetLocation === "custom" ? customLocationName || "Lokasi Kustom" : presetLocation;
+      pickup.presetKey === "custom" ? pickup.name.trim() || "Lokasi Kustom" : pickup.name;
     const hours = Number(jamSejakPanen) || 0;
     const shelf = Number(shelfLife) || 48;
     const updated: Harvest = {
@@ -552,8 +463,8 @@ export function EditHarvestDialog({
       kelas,
       kelasLabel: CLASS_LABELS[kelas],
       nilaiPerKg: Number(nilaiPerKg) || 0,
-      lat: Number(lat) || DEFAULT_COORDINATE[0],
-      lng: Number(lng) || DEFAULT_COORDINATE[1],
+      lat: pickup.lat,
+      lng: pickup.lng,
       urgency: Math.min(100, Math.round((hours / shelf) * 100)),
     };
 
@@ -599,58 +510,7 @@ export function EditHarvestDialog({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Field label="Komoditas" value={komoditas} onChange={setKomoditas} />
 
-          <div className="space-y-1.5">
-            <Label className="text-xs text-zinc-600">Lokasi Titik Panen</Label>
-            <Select value={presetLocation} onValueChange={handleLocationChange}>
-              <SelectTrigger className="border-slate-200 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {LOCATION_PRESETS.map((loc) => (
-                  <SelectItem key={loc} value={loc} className="text-xs">
-                    {loc}
-                  </SelectItem>
-                ))}
-                <SelectItem value="custom" className="text-xs font-semibold text-emerald-700">
-                  + Lokasi Kustom (Input Koordinat)
-                </SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {presetLocation === "custom" ? (
-            <>
-              <div className="col-span-1 sm:col-span-2">
-                <Field
-                  label="Nama Lokasi Kustom"
-                  value={customLocationName}
-                  onChange={setCustomLocationName}
-                />
-              </div>
-              <Field
-                label="Latitude"
-                value={String(lat)}
-                onChange={(v) => setLat(Number(v) || 0)}
-                type="number"
-              />
-              <Field
-                label="Longitude"
-                value={String(lng)}
-                onChange={(v) => setLng(Number(v) || 0)}
-                type="number"
-              />
-            </>
-          ) : (
-            <div className="col-span-1 sm:col-span-2 rounded border border-slate-100 bg-slate-50 px-3 py-1.5 text-[11px] text-zinc-600 flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
-              <span className="truncate">
-                Koordinat Terpetakan:{" "}
-                <code className="font-mono font-semibold">
-                  {lat}, {lng}
-                </code>
-              </span>
-            </div>
-          )}
+          <PickupLocationField value={pickup} onChange={setPickup} label="Lokasi titik panen" />
 
           <Field label="Volume (kg)" type="number" value={volume} onChange={setVolume} />
           <Field
