@@ -5,6 +5,7 @@ import { clearAuthSession, getAccessToken, getAuthMeta, isGuestSession } from "@
 
 const NAV = [
   { to: "/app/scenarios" as const, label: "Skenario" },
+  { to: "/app/history" as const, label: "Riwayat" },
   { to: "/app/fleet" as const, label: "Armada" },
   { to: "/app/catalog" as const, label: "Katalog" },
 ];

@@ -16,6 +16,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as AppCatalogRouteImport } from './routes/app/catalog'
 import { Route as AppFleetRouteImport } from './routes/app/fleet'
+import { Route as AppHistoryRouteImport } from './routes/app/history'
 import { Route as AppScenariosIndexRouteImport } from './routes/app/scenarios/index'
 import { Route as AppScenariosScenarioIdRouteImport } from './routes/app/scenarios/$scenarioId'
 
@@ -54,6 +55,11 @@ const AppFleetRoute = AppFleetRouteImport.update({
   path: '/fleet',
   getParentRoute: () => AppRoute,
 } as any)
+const AppHistoryRoute = AppHistoryRouteImport.update({
+  id: '/history',
+  path: '/history',
+  getParentRoute: () => AppRoute,
+} as any)
 const AppScenariosIndexRoute = AppScenariosIndexRouteImport.update({
   id: '/scenarios/',
   path: '/scenarios/',
@@ -73,6 +79,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/app/catalog': typeof AppCatalogRoute
   '/app/fleet': typeof AppFleetRoute
+  '/app/history': typeof AppHistoryRoute
   '/app/scenarios/$scenarioId': typeof AppScenariosScenarioIdRoute
   '/app/scenarios/': typeof AppScenariosIndexRoute
 }
@@ -84,6 +91,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/app/catalog': typeof AppCatalogRoute
   '/app/fleet': typeof AppFleetRoute
+  '/app/history': typeof AppHistoryRoute
   '/app/scenarios/$scenarioId': typeof AppScenariosScenarioIdRoute
   '/app/scenarios': typeof AppScenariosIndexRoute
 }
@@ -96,6 +104,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/app/catalog': typeof AppCatalogRoute
   '/app/fleet': typeof AppFleetRoute
+  '/app/history': typeof AppHistoryRoute
   '/app/scenarios/$scenarioId': typeof AppScenariosScenarioIdRoute
   '/app/scenarios/': typeof AppScenariosIndexRoute
 }
@@ -109,6 +118,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/app/catalog'
     | '/app/fleet'
+    | '/app/history'
     | '/app/scenarios/$scenarioId'
     | '/app/scenarios/'
   fileRoutesByTo: FileRoutesByTo
@@ -120,6 +130,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/app/catalog'
     | '/app/fleet'
+    | '/app/history'
     | '/app/scenarios/$scenarioId'
     | '/app/scenarios'
   id:
@@ -131,6 +142,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/app/catalog'
     | '/app/fleet'
+    | '/app/history'
     | '/app/scenarios/$scenarioId'
     | '/app/scenarios/'
   fileRoutesById: FileRoutesById
@@ -194,6 +206,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppFleetRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/history': {
+      id: '/app/history'
+      path: '/history'
+      fullPath: '/app/history'
+      preLoaderRoute: typeof AppHistoryRouteImport
+      parentRoute: typeof AppRoute
+    }
     '/app/scenarios/': {
       id: '/app/scenarios/'
       path: '/scenarios'
@@ -214,6 +233,7 @@ declare module '@tanstack/react-router' {
 interface AppRouteChildren {
   AppCatalogRoute: typeof AppCatalogRoute
   AppFleetRoute: typeof AppFleetRoute
+  AppHistoryRoute: typeof AppHistoryRoute
   AppScenariosScenarioIdRoute: typeof AppScenariosScenarioIdRoute
   AppScenariosIndexRoute: typeof AppScenariosIndexRoute
 }
@@ -221,6 +241,7 @@ interface AppRouteChildren {
 const AppRouteChildren: AppRouteChildren = {
   AppCatalogRoute: AppCatalogRoute,
   AppFleetRoute: AppFleetRoute,
+  AppHistoryRoute: AppHistoryRoute,
   AppScenariosScenarioIdRoute: AppScenariosScenarioIdRoute,
   AppScenariosIndexRoute: AppScenariosIndexRoute,
 }

@@ -2,12 +2,18 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { PlannerPage } from "@/components/panenroute/PlannerPage";
 
 export const Route = createFileRoute("/app/scenarios/$scenarioId")({
-  validateSearch: (search: Record<string, unknown>) => {
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): {
+    tab: "comparison" | "map";
+    runId?: string;
+  } => {
     const raw = (search["tab"] as string)?.toLowerCase();
     let tab: "comparison" | "map" = "comparison";
     if (raw === "map" || raw === "peta") tab = "map";
     else if (raw === "comparison" || raw === "komparasi") tab = "comparison";
-    return { tab };
+    const runId = typeof search["runId"] === "string" ? search["runId"] : undefined;
+    return runId !== undefined ? { tab, runId } : { tab };
   },
   head: () => ({ meta: [{ title: "Planner — JagaPanen App" }] }),
   component: OrgPlannerRoute,
@@ -15,13 +21,14 @@ export const Route = createFileRoute("/app/scenarios/$scenarioId")({
 
 function OrgPlannerRoute() {
   const { scenarioId } = Route.useParams();
-  const { tab: activeTab } = Route.useSearch();
+  const { tab: activeTab, runId } = Route.useSearch();
   const navigate = useNavigate({ from: Route.fullPath });
 
   return (
     <PlannerPage
       mode="org"
       scenarioId={scenarioId}
+      initialRunId={runId}
       activeTab={activeTab}
       onTabChange={(newTab) => {
         navigate({

@@ -26,6 +26,9 @@ import {
   createDemoSession,
   runOptimization,
   mapOptimizationResponse,
+  mapRunDetailToComparison,
+  getOptimizationRun,
+  downloadOptimizationReport,
   isUuidLike,
   scoreRisk,
   previewOptimization,
@@ -40,12 +43,15 @@ import { toast } from "sonner";
 export function PlannerPage({
   mode: plannerMode = "guest",
   scenarioId: scenarioIdProp,
+  initialRunId,
   forceGuest = false,
   activeTab = "comparison",
   onTabChange,
 }: {
   mode?: "guest" | "org";
   scenarioId?: string;
+  /** Org history replay — loads run into ComparisonView */
+  initialRunId?: string | undefined;
   forceGuest?: boolean;
   activeTab?: "comparison" | "map";
   onTabChange?: (tab: "comparison" | "map") => void;
@@ -73,6 +79,7 @@ export function PlannerPage({
   const [isResetting, setIsResetting] = useState(false);
   const [signupOpen, setSignupOpen] = useState(false);
   const [signupReason, setSignupReason] = useState<"limit" | "export">("limit");
+  const [lastRunId, setLastRunId] = useState<string | null>(initialRunId ?? null);
 
   const handleTabChange = (newTab: "comparison" | "map") => {
     onTabChange?.(newTab);
@@ -352,6 +359,7 @@ export function PlannerPage({
           : undefined,
       );
       setComparisonData(mapped);
+      if (raw.run_id) setLastRunId(raw.run_id);
       setScenarioStatus("completed");
       if (guestMode && typeof runsRemaining === "number") {
         const next = Math.max(0, runsRemaining - 1);
@@ -389,15 +397,57 @@ export function PlannerPage({
     }
   };
 
-  const handleExportClick = () => {
+  // Org history: replay a past run into ComparisonView once harvests are ready
+  useEffect(() => {
+    if (!isOrgMode || !initialRunId || !isBackendConnected || isHarvestsLoading) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const detail = await getOptimizationRun(initialRunId);
+        if (cancelled) return;
+        const mapped = mapRunDetailToComparison(detail, harvests);
+        setComparisonData(mapped);
+        setLastRunId(detail.id);
+        setScenarioStatus("completed");
+        toast.success("Run historis dimuat ke komparasi");
+      } catch (e) {
+        if (!cancelled) {
+          toast.error("Gagal memuat run historis", {
+            description: e instanceof Error ? e.message : String(e),
+          });
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- replay once per runId after harvest load
+  }, [isOrgMode, initialRunId, isBackendConnected, isHarvestsLoading]);
+
+  const handleExportClick = async () => {
     if (guestMode) {
       setSignupReason("export");
       setSignupOpen(true);
       return;
     }
-    toast.message("Ekspor laporan", {
-      description: "Unduhan PDF/CSV menyusul di fase P3 untuk akun organisasi.",
-    });
+    if (!lastRunId) {
+      toast.error("Belum ada run untuk diekspor", {
+        description: "Jalankan optimasi dulu, atau buka ulang dari Riwayat.",
+      });
+      return;
+    }
+    try {
+      await downloadOptimizationReport(lastRunId, "csv");
+      toast.success("Laporan keputusan CSV diunduh");
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      if (/403/.test(message)) {
+        setSignupReason("export");
+        setSignupOpen(true);
+        return;
+      }
+      toast.error("Ekspor gagal", { description: message });
+    }
   };
 
   return (
@@ -512,7 +562,12 @@ export function PlannerPage({
                 Skenario
               </Button>
             )}
-            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleExportClick}>
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => void handleExportClick()}
+            >
               <FileDown className="mr-1.5 h-3.5 w-3.5" />
               Ekspor
             </Button>
@@ -576,7 +631,14 @@ export function PlannerPage({
           <ComparisonView data={comparisonData} isLoading={isHarvestsLoading || isCalculating} />
         ) : (
           <div className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xs">
-            <RouteMap harvests={harvests} mode={routeMode} />
+            <RouteMap
+              harvests={harvests}
+              mode={routeMode}
+              routeGeometries={{
+                baseline: comparisonData?.baseline?.geometry,
+                spoilage: comparisonData?.jagaPanen?.geometry,
+              }}
+            />
           </div>
         )}
 
