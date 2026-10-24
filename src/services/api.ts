@@ -141,6 +141,7 @@ export interface Commodity {
   confidence?: "high" | "medium" | "provisional";
   notes?: string;
   is_assumption?: boolean;
+  active?: boolean;
 }
 
 export interface Vehicle {
@@ -538,8 +539,68 @@ export async function getCommodities(): Promise<Commodity[]> {
   }
 }
 
-export async function getVehicles(): Promise<Vehicle[]> {
-  return apiJson<Vehicle[]>("/vehicles?active_only=true");
+export async function getVehicles(activeOnly = true): Promise<Vehicle[]> {
+  return apiJson<Vehicle[]>(`/vehicles?active_only=${activeOnly}`);
+}
+
+export async function getCommoditiesAdmin(activeOnly = false): Promise<Commodity[]> {
+  return apiJson<Commodity[]>(`/commodities?active_only=${activeOnly}`);
+}
+
+export type CommodityCreatePayload = {
+  name: string;
+  perishability_class: "A" | "B" | "C" | "D" | "E";
+  shelf_life_hours: number;
+  default_price_idr_per_kg: number;
+};
+
+export type CommodityUpdatePayload = Partial<CommodityCreatePayload> & { active?: boolean };
+
+export async function createCommodity(payload: CommodityCreatePayload): Promise<Commodity> {
+  return apiJson<Commodity>("/commodities", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateCommodity(
+  id: string,
+  payload: CommodityUpdatePayload,
+): Promise<Commodity> {
+  return apiJson<Commodity>(`/commodities/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export type VehicleCreatePayload = {
+  name: string;
+  capacity_kg: number;
+  current_location_lat: number;
+  current_location_lng: number;
+  available_from: string;
+  available_until?: string | null;
+  cost_per_km_idr: number;
+};
+
+export type VehicleUpdatePayload = Partial<VehicleCreatePayload> & { active?: boolean };
+
+export async function createVehicle(payload: VehicleCreatePayload): Promise<Vehicle> {
+  return apiJson<Vehicle>("/vehicles", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateVehicle(id: string, payload: VehicleUpdatePayload): Promise<Vehicle> {
+  return apiJson<Vehicle>(`/vehicles/${id}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
 }
 
 /** Real catalog + fleet. Throws; does not substitute the offline catalog. */
