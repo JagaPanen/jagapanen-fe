@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ShieldCheck, Database, RefreshCw, Layers, Play } from "lucide-react";
+import { ShieldCheck, Database, RefreshCw, Layers, Play, FileDown } from "lucide-react";
 import { RouteMap } from "@/components/panenroute/RouteMap";
 import { HarvestTable } from "@/components/panenroute/HarvestTable";
 import { FormulaDialog, AddHarvestDialog } from "@/components/panenroute/Dialogs";
@@ -10,6 +10,7 @@ import { ComparisonView } from "@/components/panenroute/ComparisonView";
 import { CommodityAdminDialog } from "@/components/panenroute/CommodityAdminDialog";
 import { TestReportDialog } from "@/components/panenroute/TestReportDialog";
 import { GuestBanner } from "@/components/panenroute/GuestBanner";
+import { ConvertToSignupModal } from "@/components/panenroute/ConvertToSignupModal";
 import { PlanningPanel } from "@/components/panenroute/PlanningPanel";
 import { type Harvest, type Mode } from "@/components/panenroute/data";
 import { clearAuthSession, getAccessToken, getAuthMeta, isGuestSession } from "@/lib/auth-session";
@@ -37,25 +38,30 @@ import {
 import { toast } from "sonner";
 
 export function PlannerPage({
+  mode: plannerMode = "guest",
+  scenarioId: scenarioIdProp,
   forceGuest = false,
   activeTab = "comparison",
   onTabChange,
 }: {
+  mode?: "guest" | "org";
+  scenarioId?: string;
   forceGuest?: boolean;
   activeTab?: "comparison" | "map";
   onTabChange?: (tab: "comparison" | "map") => void;
 }) {
   const navigate = useNavigate();
-  const [mode] = useState<Mode>("spoilage");
+  const isOrgMode = plannerMode === "org" && !!scenarioIdProp && !forceGuest;
+  const [routeMode] = useState<Mode>("spoilage");
   const [harvests, setHarvests] = useState<Harvest[]>([]);
   const [isHarvestsLoading, setIsHarvestsLoading] = useState<boolean>(true);
   const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
   const [backendError, setBackendError] = useState<string | null>(null);
-  const [scenarioId, setScenarioId] = useState<string | null>(null);
+  const [scenarioId, setScenarioId] = useState<string | null>(scenarioIdProp ?? null);
   const [scenarioStatus, setScenarioStatus] = useState<string | null>(null);
   const [comparisonData, setComparisonData] = useState<ComparisonData | null>(null);
   const [isCalculating, setIsCalculating] = useState<boolean>(false);
-  const [guestMode, setGuestMode] = useState(forceGuest);
+  const [guestMode, setGuestMode] = useState(!isOrgMode);
   const [runsRemaining, setRunsRemaining] = useState<number | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState<string | null>(null);
@@ -65,6 +71,8 @@ export function PlannerPage({
   const [isScoring, setIsScoring] = useState(false);
   const [isPreviewing, setIsPreviewing] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [signupOpen, setSignupOpen] = useState(false);
+  const [signupReason, setSignupReason] = useState<"limit" | "export">("limit");
 
   const handleTabChange = (newTab: "comparison" | "map") => {
     onTabChange?.(newTab);
@@ -134,26 +142,30 @@ export function PlannerPage({
 
     async function bootstrap() {
       try {
-        if (forceGuest) {
-          clearAuthSession();
-        }
-        const existing = getAccessToken();
-        const meta = getAuthMeta();
-        let activeScenarioId = meta?.scenarioId ?? null;
+        let activeScenarioId: string | null = null;
 
-        if (!existing || forceGuest || !activeScenarioId) {
+        if (isOrgMode) {
+          const existing = getAccessToken();
+          const meta = getAuthMeta();
+          if (!existing || !meta || meta.role !== "user" || isGuestSession()) {
+            throw new Error("Sesi organisasi diperlukan. Silakan masuk.");
+          }
+          activeScenarioId = scenarioIdProp ?? null;
+          setGuestMode(false);
+          setRunsRemaining(null);
+        } else {
+          clearAuthSession();
           const session = await createDemoSession();
           if (cancelled) return;
           activeScenarioId = session.scenario_id ?? null;
           setGuestMode(true);
           setRunsRemaining(typeof session.runs_remaining === "number" ? session.runs_remaining : 5);
-        } else {
-          setGuestMode(isGuestSession() || forceGuest);
-          setRunsRemaining(typeof meta?.runsRemaining === "number" ? meta.runsRemaining : null);
         }
 
         if (!activeScenarioId) {
-          throw new Error("Demo session did not return scenario_id");
+          throw new Error(
+            isOrgMode ? "scenarioId tidak valid" : "Demo session did not return scenario_id",
+          );
         }
 
         const probed = await probeBackend();
@@ -169,10 +181,13 @@ export function PlannerPage({
         console.error("[JagaPanen] Backend check failed. API base:", API_BASE_URL, err);
         setBackendError(message);
         setIsBackendConnected(false);
-        setScenarioId(null);
+        if (!isOrgMode) setScenarioId(null);
         setComparisonData(EMPTY_COMPARISON);
         setIsHarvestsLoading(false);
         toast.error("Backend tidak terjangkau", { description: message });
+        if (isOrgMode && /organisasi|masuk/i.test(message)) {
+          void navigate({ to: "/login" });
+        }
       }
     }
 
@@ -180,7 +195,7 @@ export function PlannerPage({
     return () => {
       cancelled = true;
     };
-  }, [forceGuest, loadHarvestsFromBackend]);
+  }, [forceGuest, isOrgMode, loadHarvestsFromBackend, navigate, scenarioIdProp]);
 
   const selectedCapacity = useMemo(() => {
     const v = vehicles.find((item) => item.id === selectedVehicleId);
@@ -353,6 +368,10 @@ export function PlannerPage({
             });
           }
         }
+        if (next === 0) {
+          setSignupReason("limit");
+          setSignupOpen(true);
+        }
       }
       toast.success("Rute berhasil dihitung dari backend");
     } catch (e) {
@@ -361,36 +380,52 @@ export function PlannerPage({
       setComparisonData(EMPTY_COMPARISON);
       await refreshScenarioStatus(scenarioId);
       toast.error("Optimasi gagal", { description: message });
+      if (guestMode && /limit|429|Sign up/i.test(message)) {
+        setSignupReason("limit");
+        setSignupOpen(true);
+      }
     } finally {
       setIsCalculating(false);
     }
   };
 
+  const handleExportClick = () => {
+    if (guestMode) {
+      setSignupReason("export");
+      setSignupOpen(true);
+      return;
+    }
+    toast.message("Ekspor laporan", {
+      description: "Unduhan PDF/CSV menyusul di fase P3 untuk akun organisasi.",
+    });
+  };
+
   return (
     <div className="min-h-screen min-h-[100dvh] w-full max-w-full overflow-x-hidden bg-slate-50 text-zinc-900 flex flex-col">
       {guestMode ? <GuestBanner runsRemaining={runsRemaining} /> : null}
+      <ConvertToSignupModal open={signupOpen} onOpenChange={setSignupOpen} reason={signupReason} />
       <header className="w-full border-b border-slate-200 bg-white">
-        <div className="mx-auto flex w-full max-w-[1600px] flex-col sm:flex-row sm:items-center justify-between gap-3 px-3.5 sm:px-5 py-3">
+        <div className="mx-auto flex w-full max-w-[1600px] flex-col justify-between gap-3 px-3.5 py-3 sm:flex-row sm:items-center sm:px-5">
           <div className="flex items-center gap-2.5">
             <img
               src="/logo.png"
               alt="JagaPanen - Spoilage-Aware Agri-Logistics"
-              className="h-10 sm:h-12 w-auto object-contain flex-shrink-0"
+              className="h-10 w-auto flex-shrink-0 object-contain sm:h-12"
             />
           </div>
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <Badge
               variant="outline"
-              className="border-slate-200 rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-medium text-slate-600 bg-slate-50/50"
+              className="rounded-full border-slate-200 bg-slate-50/50 px-2.5 py-0.5 text-[10px] font-medium text-slate-600 sm:text-[11px]"
             >
-              {guestMode ? "Guest Demo" : "Pilot: Koperasi Tani Maju Bersama"}
+              {guestMode ? "Guest Demo" : "Org workspace"}
             </Badge>
             <Badge
               variant="outline"
               className={
                 isBackendConnected
-                  ? "border-emerald-200 bg-emerald-50 rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-medium text-emerald-700"
-                  : "border-amber-200 bg-amber-50 rounded-full px-2.5 py-0.5 text-[10px] sm:text-[11px] font-medium text-amber-700"
+                  ? "rounded-full border-emerald-200 bg-emerald-50 px-2.5 py-0.5 text-[10px] font-medium text-emerald-700 sm:text-[11px]"
+                  : "rounded-full border-amber-200 bg-amber-50 px-2.5 py-0.5 text-[10px] font-medium text-amber-700 sm:text-[11px]"
               }
             >
               {isBackendConnected ? (
@@ -405,20 +440,20 @@ export function PlannerPage({
             </Badge>
           </div>
         </div>
-        {backendError && (
-          <div className="mx-auto w-full max-w-[1600px] px-3.5 sm:px-5 pb-3 text-[11px] leading-snug text-amber-800 break-all">
+        {backendError ? (
+          <div className="mx-auto w-full max-w-[1600px] break-all px-3.5 pb-3 text-[11px] leading-snug text-amber-800 sm:px-5">
             API {API_BASE_URL}: {backendError}
           </div>
-        )}
+        ) : null}
       </header>
 
-      <div className="sticky top-0 z-10 w-full border-b border-slate-200 bg-white/95 backdrop-blur px-3 sm:px-5 py-2 sm:py-2.5">
-        <div className="mx-auto flex w-full max-w-[1600px] flex-col lg:flex-row lg:items-center justify-between gap-2.5">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full lg:w-auto">
-            <div className="flex rounded-lg border border-slate-200 bg-slate-50 p-0.5 w-full sm:w-auto">
+      <div className="sticky top-0 z-10 w-full border-b border-slate-200 bg-white/95 px-3 py-2 backdrop-blur sm:px-5 sm:py-2.5">
+        <div className="mx-auto flex w-full max-w-[1600px] flex-col justify-between gap-2.5 lg:flex-row lg:items-center">
+          <div className="flex w-full flex-col items-stretch gap-2 sm:flex-row sm:items-center lg:w-auto">
+            <div className="flex w-full rounded-lg border border-slate-200 bg-slate-50 p-0.5 sm:w-auto">
               <button
                 onClick={() => handleTabChange("comparison")}
-                className={`flex-1 sm:flex-none justify-center rounded-md px-2.5 sm:px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors sm:flex-none sm:px-3 ${
                   activeTab === "comparison"
                     ? "bg-white text-zinc-900 shadow-xs"
                     : "text-zinc-500 hover:text-zinc-800"
@@ -430,7 +465,7 @@ export function PlannerPage({
               </button>
               <button
                 onClick={() => handleTabChange("map")}
-                className={`flex-1 sm:flex-none justify-center rounded-md px-2.5 sm:px-3 py-1.5 text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+                className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-semibold transition-colors sm:flex-none sm:px-3 ${
                   activeTab === "map"
                     ? "bg-white text-zinc-900 shadow-xs"
                     : "text-zinc-500 hover:text-zinc-800"
@@ -446,7 +481,7 @@ export function PlannerPage({
               size="sm"
               onClick={handleRunOptimization}
               disabled={isCalculating || isHarvestsLoading || !canOptimize}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-8 shrink-0 justify-center rounded-lg shadow-sm"
+              className="h-8 shrink-0 justify-center rounded-lg bg-emerald-600 text-xs text-white shadow-sm hover:bg-emerald-700"
             >
               <Play className="mr-1.5 h-3.5 w-3.5 shrink-0" />
               {isCalculating
@@ -457,16 +492,31 @@ export function PlannerPage({
             </Button>
           </div>
 
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 lg:pb-0 w-full lg:w-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 text-xs"
-              onClick={() => navigate({ to: "/demo", search: { tab: "comparison" } })}
-            >
-              /demo
+          <div className="flex w-full items-center gap-1.5 overflow-x-auto pb-1 lg:w-auto lg:pb-0">
+            {guestMode ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => navigate({ to: "/" })}
+              >
+                Landing
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={() => navigate({ to: "/app/scenarios" })}
+              >
+                Skenario
+              </Button>
+            )}
+            <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleExportClick}>
+              <FileDown className="mr-1.5 h-3.5 w-3.5" />
+              Ekspor
             </Button>
-            <CommodityAdminDialog />
+            {!guestMode ? <CommodityAdminDialog /> : null}
             <TestReportDialog />
             <FormulaDialog />
             <AddHarvestDialog
@@ -484,7 +534,7 @@ export function PlannerPage({
         </div>
       </div>
 
-      <main className="mx-auto w-full max-w-[1600px] flex-1 space-y-4 px-3 sm:px-5 py-3 sm:py-4">
+      <main className="mx-auto w-full max-w-[1600px] flex-1 space-y-4 px-3 py-3 sm:px-5 sm:py-4">
         {isBackendConnected ? (
           <PlanningPanel
             scenarioStatus={scenarioStatus}
@@ -506,27 +556,27 @@ export function PlannerPage({
           />
         ) : null}
 
-        {isOverload && selectedCapacity != null && (
-          <div className="w-full p-3 bg-rose-50 border border-rose-300 text-rose-800 text-xs rounded-xl shadow-sm">
+        {isOverload && selectedCapacity != null ? (
+          <div className="w-full rounded-xl border border-rose-300 bg-rose-50 p-3 text-xs text-rose-800 shadow-sm">
             <strong>
               Kapasitas armada terlampaui ({totalVolume} kg / {selectedCapacity} kg).
             </strong>{" "}
             Pilih truk lain yang feasible atau kurangi volume panen.
           </div>
-        )}
+        ) : null}
 
-        {scenarioStatus === "completed" && (
-          <div className="w-full p-3 bg-slate-100 border border-slate-200 text-slate-700 text-xs rounded-xl">
+        {scenarioStatus === "completed" ? (
+          <div className="w-full rounded-xl border border-slate-200 bg-slate-100 p-3 text-xs text-slate-700">
             Skenario <strong>completed</strong>. Gunakan <em>Reset ke Draft</em> untuk mengedit
-            panen lagi, lalu ulang skor → preview → pilih truk → optimasi.
+            panen lagi, lalu ulang skor, preview, pilih truk, optimasi.
           </div>
-        )}
+        ) : null}
 
         {activeTab === "comparison" ? (
           <ComparisonView data={comparisonData} isLoading={isHarvestsLoading || isCalculating} />
         ) : (
-          <div className="w-full border border-slate-200 rounded-lg overflow-hidden bg-white shadow-xs">
-            <RouteMap harvests={harvests} mode={mode} />
+          <div className="w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xs">
+            <RouteMap harvests={harvests} mode={routeMode} />
           </div>
         )}
 

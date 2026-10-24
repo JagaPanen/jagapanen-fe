@@ -21,6 +21,7 @@ function DemoPage() {
 
   return (
     <PlannerPage
+      mode="guest"
       forceGuest
       activeTab={activeTab}
       onTabChange={(newTab) => {
