@@ -1368,3 +1368,58 @@ export function calculateClientOptimization(payload: ClientOptimizationPayload):
     },
   };
 }
+
+export interface BillingUsage {
+  plan: string;
+  period_key: string;
+  optimize_runs_used: number;
+  optimize_runs_limit: number | null;
+  usage_ratio: number;
+  soft_warning: boolean;
+  hard_blocked: boolean;
+  pilot_ends_at?: string | null;
+  pilot_expired: boolean;
+  upgrade_required: boolean;
+  message?: string | null;
+}
+
+export interface CheckoutResponse {
+  mode: string;
+  plan: string;
+  status: string;
+  external_id: string;
+  checkout_url?: string | null;
+  subscription_id: string;
+  message: string;
+}
+
+export async function getBillingUsage(): Promise<BillingUsage> {
+  return apiJson<BillingUsage>("/billing/usage", { headers: authHeaders() });
+}
+
+export async function startBillingCheckout(
+  plan: "starter" | "fleet",
+  activateStub = false,
+): Promise<CheckoutResponse> {
+  return apiJson<CheckoutResponse>("/billing/checkout", {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ plan, activate_stub: activateStub }),
+  });
+}
+
+export async function confirmBillingWebhook(externalId: string, status = "PAID"): Promise<void> {
+  await apiJson<unknown>("/billing/webhook", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ external_id: externalId, status }),
+  });
+}
+
+export async function devSetBillingUsage(optimizeRunsUsed: number): Promise<BillingUsage> {
+  return apiJson<BillingUsage>("/billing/dev/set-usage", {
+    method: "POST",
+    headers: authHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({ optimize_runs_used: optimizeRunsUsed }),
+  });
+}
