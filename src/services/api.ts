@@ -926,6 +926,9 @@ export function backendHarvestToFrontend(
     nilaiPerKg: price,
     lat: Number(bh.location_lat),
     lng: Number(bh.location_lng),
+    destinationName: bh.destination_name || undefined,
+    destinationLat: Number(bh.destination_lat) || undefined,
+    destinationLng: Number(bh.destination_lng) || undefined,
     urgency: Math.min(100, Math.round((hoursSince / shelfLife) * 100)),
   };
 }
@@ -1071,17 +1074,19 @@ export function mapOptimizationResponse(
     throw new Error("Respons optimasi tidak memiliki baseline_route / spoilage_aware_route");
   }
 
-  const harvestLookup = new Map(
-    harvests.map((h) => [
-      h.id,
-      {
-        label: h.label || h.lokasi || h.id,
-        commodity_name: h.komoditas || h.label || "Komoditas",
-        perishability_class: h.kelas || "-",
-        volume_kg: Number(h.volume) || 0,
-      },
-    ]),
-  );
+  const harvestMeta = harvests.map((h) => ({
+    label: h.label || h.lokasi || h.id,
+    commodity_name: h.komoditas || h.label || "Komoditas",
+    perishability_class: h.kelas || "-",
+    volume_kg: Number(h.volume) || 0,
+  }));
+  const harvestLookup = new Map<string, (typeof harvestMeta)[number]>();
+  harvests.forEach((h, i) => {
+    const meta = harvestMeta[i]!;
+    harvestLookup.set(h.id, meta);
+    if (h.lokasi) harvestLookup.set(h.lokasi, meta);
+    if (h.label) harvestLookup.set(h.label, meta);
+  });
 
   const baseline = routeToOptimizationResult(
     res.baseline_route,
