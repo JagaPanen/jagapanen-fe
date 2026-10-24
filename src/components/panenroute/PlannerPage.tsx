@@ -89,7 +89,12 @@ export function PlannerPage({
     setPreview(null);
     setScored(false);
     setSelectedVehicleId(null);
-    setComparisonData(EMPTY_COMPARISON);
+    setLastRunId(null);
+    // Fresh empty object so map geometries / stops cannot linger after reset
+    setComparisonData({
+      baseline: { ...EMPTY_COMPARISON.baseline, stops: [], geometry: undefined },
+      jagaPanen: { ...EMPTY_COMPARISON.jagaPanen, stops: [], geometry: undefined },
+    });
   }, []);
 
   const applyHarvests = useCallback(
@@ -122,7 +127,7 @@ export function PlannerPage({
         const mapped = Array.isArray(backendItems)
           ? backendItems.map((item) => backendHarvestToFrontend(item, catalog))
           : [];
-        applyHarvests(mapped);
+        applyHarvests(mapped as Harvest[]);
         await refreshScenarioStatus(activeScenarioId);
         return mapped;
       } catch (err) {
