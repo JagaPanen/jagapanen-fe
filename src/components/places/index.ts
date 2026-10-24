@@ -9,9 +9,13 @@ export {
 export {
   CUSTOM_DESTINATION_ID,
   DEFAULT_DESTINATIONS,
+  UNSET_DESTINATION_ID,
   customDestination,
+  destinationFromCoords,
   destinationLabel,
   findDestination,
+  isDestinationChosen,
+  unsetDestination,
   type DestinationOption,
   type PlacePoint,
   type PickupPlaceValue,

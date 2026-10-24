@@ -10,6 +10,10 @@ export type Harvest = {
   nilaiPerKg: number;
   lat: number;
   lng: number;
+  /** Drop-off for this order (user-editable; not a static market). */
+  destinationName?: string;
+  destinationLat?: number;
+  destinationLng?: number;
   /** From POST /risk/score when available */
   urgency?: number;
   priorityLevel?: string;
@@ -79,6 +83,7 @@ export const VEHICLE = {
   marketCoord: [-7.834, 110.3912] as [number, number],
 };
 
+/** Offline demo samples — each order has its own tujuan (not one static market). */
 export const INITIAL_HARVESTS: Harvest[] = [
   {
     id: "HRV-001",
@@ -92,6 +97,9 @@ export const INITIAL_HARVESTS: Harvest[] = [
     nilaiPerKg: 15000,
     lat: -7.5312,
     lng: 110.3541,
+    destinationName: "Pasar Induk Giwangan",
+    destinationLat: -7.834,
+    destinationLng: 110.3912,
   },
   {
     id: "HRV-002",
@@ -105,6 +113,9 @@ export const INITIAL_HARVESTS: Harvest[] = [
     nilaiPerKg: 45000,
     lat: -7.3985,
     lng: 110.3952,
+    destinationName: "Pasar Johar",
+    destinationLat: -6.968,
+    destinationLng: 110.428,
   },
   {
     id: "HRV-003",
@@ -118,6 +129,9 @@ export const INITIAL_HARVESTS: Harvest[] = [
     nilaiPerKg: 12000,
     lat: -7.3684,
     lng: 110.334,
+    destinationName: "Pasar Legi / area induk Solo",
+    destinationLat: -7.569,
+    destinationLng: 110.829,
   },
   {
     id: "HRV-722",
@@ -131,6 +145,9 @@ export const INITIAL_HARVESTS: Harvest[] = [
     nilaiPerKg: 28000,
     lat: -7.8142,
     lng: 110.9255,
+    destinationName: "Pasar Induk Giwangan",
+    destinationLat: -7.834,
+    destinationLng: 110.3912,
   },
 ];
 

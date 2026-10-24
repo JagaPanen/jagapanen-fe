@@ -35,7 +35,13 @@ import {
   pickupFromHarvestLokasi,
   pickupFromPreset,
 } from "@/components/places/PickupLocationField";
-import { DEFAULT_DESTINATIONS, type DestinationOption, type PickupPlaceValue } from "@/lib/places";
+import {
+  destinationFromCoords,
+  isDestinationChosen,
+  unsetDestination,
+  type DestinationOption,
+  type PickupPlaceValue,
+} from "@/lib/places";
 
 export function FormulaDialog() {
   return (
@@ -162,7 +168,7 @@ export function AddHarvestDialog({
   const [kelas, setKelas] = useState<Harvest["kelas"]>("A");
   const [nilaiPerKg, setNilaiPerKg] = useState("15000");
   const [initialCondition, setInitialCondition] = useState("fresh");
-  const [destination, setDestination] = useState<DestinationOption>(DEFAULT_DESTINATIONS[0]!);
+  const [destination, setDestination] = useState<DestinationOption>(() => unsetDestination());
 
   useEffect(() => {
     if (!open) return;
@@ -213,8 +219,10 @@ export function AddHarvestDialog({
       toast.error("Isi nama lokasi panen");
       return;
     }
-    if (destination.id === "custom" && !destination.name.trim()) {
-      toast.error("Isi nama tujuan distribusi");
+    if (!isDestinationChosen(destination)) {
+      toast.error("Pilih tujuan distribusi", {
+        description: "Gunakan saran pasar/desa sentra, atau isi tujuan sendiri.",
+      });
       return;
     }
     setIsSubmitting(true);
@@ -250,6 +258,9 @@ export function AddHarvestDialog({
       nilaiPerKg: Number(nilaiPerKg) || 15000,
       lat: pickup.lat,
       lng: pickup.lng,
+      destinationName: destination.name,
+      destinationLat: destination.lat,
+      destinationLng: destination.lng,
       urgency: Math.min(100, Math.round((hours / shelf) * 100)),
     };
 
@@ -388,7 +399,8 @@ export function AddHarvestDialog({
             value={destination}
             onChange={setDestination}
             allowCustom
-            label="Tujuan distribusi (pasar / gudang)"
+            label="Tujuan order (wajib)"
+            placeholder="Pilih saran pasar/desa atau isi sendiri"
           />
         </div>
         <DialogFooter>
@@ -429,6 +441,7 @@ export function EditHarvestDialog({
   const [shelfLife, setShelfLife] = useState("48");
   const [kelas, setKelas] = useState<Harvest["kelas"]>("A");
   const [nilaiPerKg, setNilaiPerKg] = useState("");
+  const [destination, setDestination] = useState<DestinationOption>(() => unsetDestination());
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -440,6 +453,13 @@ export function EditHarvestDialog({
       setKelas(harvest.kelas);
       setNilaiPerKg(String(harvest.nilaiPerKg));
       setPickup(pickupFromHarvestLokasi(harvest.lokasi, harvest.lat, harvest.lng));
+      setDestination(
+        destinationFromCoords(
+          harvest.destinationName,
+          harvest.destinationLat,
+          harvest.destinationLng,
+        ),
+      );
     }
   }, [harvest]);
 
@@ -447,6 +467,12 @@ export function EditHarvestDialog({
     if (!harvest || !komoditas || !volume) return;
     if (pickup.presetKey === "custom" && !pickup.name.trim()) {
       toast.error("Isi nama lokasi panen");
+      return;
+    }
+    if (!isDestinationChosen(destination)) {
+      toast.error("Pilih tujuan distribusi", {
+        description: "Gunakan saran pasar/desa sentra, atau isi tujuan sendiri.",
+      });
       return;
     }
     const finalLocation =
@@ -465,6 +491,9 @@ export function EditHarvestDialog({
       nilaiPerKg: Number(nilaiPerKg) || 0,
       lat: pickup.lat,
       lng: pickup.lng,
+      destinationName: destination.name,
+      destinationLat: destination.lat,
+      destinationLng: destination.lng,
       urgency: Math.min(100, Math.round((hours / shelf) * 100)),
     };
 
@@ -477,6 +506,9 @@ export function EditHarvestDialog({
           location_lng: updated.lng,
           volume_kg: updated.volume,
           harvested_at: new Date(Date.now() - hours * 3600 * 1000).toISOString(),
+          destination_lat: destination.lat,
+          destination_lng: destination.lng,
+          destination_name: destination.name,
         });
         toast.success("Perubahan panen berhasil disimpan");
         await onSaveSuccess?.();
@@ -503,8 +535,8 @@ export function EditHarvestDialog({
         <DialogHeader>
           <DialogTitle>Edit Data Panen ({harvest.id})</DialogTitle>
           <DialogDescription className="text-xs">
-            Perbarui data komoditas atau ganti lokasi titik jemput panen. Peta akan otomatis
-            menyesuaikan rute.
+            Perbarui jemput, tujuan drop-off, atau detail muatan. Rute mengikuti tujuan yang Anda
+            pilih.
           </DialogDescription>
         </DialogHeader>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -537,6 +569,15 @@ export function EditHarvestDialog({
               </SelectContent>
             </Select>
           </div>
+
+          <DestinationSelect
+            className="col-span-1 sm:col-span-2"
+            value={destination}
+            onChange={setDestination}
+            allowCustom
+            label="Tujuan order (wajib)"
+            placeholder="Pilih saran pasar/desa atau isi sendiri"
+          />
         </div>
         <DialogFooter>
           <Button
