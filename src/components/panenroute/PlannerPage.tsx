@@ -277,20 +277,31 @@ export function PlannerPage({
     try {
       const res = await previewOptimization(scenarioId);
       setPreview(res);
-      // Prefer largest capacity among feasible (API sorts tightest/smallest first).
-      const preferred = [...res.feasible_vehicles].sort((a, b) => {
-        const ca =
-          vehicles.find((v) => v.id === a.vehicle_id)?.capacity_kg ?? a.remaining_capacity_kg;
-        const cb =
-          vehicles.find((v) => v.id === b.vehicle_id)?.capacity_kg ?? b.remaining_capacity_kg;
-        return cb - ca;
-      })[0];
-      setSelectedVehicleId(preferred?.vehicle_id ?? null);
+      const capacityOf = (id: string) => vehicles.find((v) => v.id === id)?.capacity_kg ?? 0;
+      const byLargest = <T extends { vehicle_id: string }>(rows: T[]) =>
+        [...rows].sort((a, b) => capacityOf(b.vehicle_id) - capacityOf(a.vehicle_id));
+
+      // Prefer largest feasible; if none, keep current selection if rejected, else largest rejected.
+      // Never toast rejected[0] alone (often the 500kg pickup) — message follows the vehicle in focus.
+      let nextId: string | null = null;
+      let focusRejected = null as (typeof res.rejected_vehicles)[number] | null;
+      if (res.feasible_vehicles.length > 0) {
+        nextId = byLargest(res.feasible_vehicles)[0]?.vehicle_id ?? null;
+      } else {
+        const kept = selectedVehicleId
+          ? res.rejected_vehicles.find((r) => r.vehicle_id === selectedVehicleId)
+          : undefined;
+        focusRejected = kept ?? byLargest(res.rejected_vehicles)[0] ?? null;
+        nextId = focusRejected?.vehicle_id ?? null;
+      }
+      setSelectedVehicleId(nextId);
       setComparisonData(EMPTY_COMPARISON);
       await refreshScenarioStatus(scenarioId);
       if (res.feasible_vehicles.length === 0) {
+        const name = focusRejected?.vehicle_name ?? "Armada";
+        const reason = focusRejected?.reasons[0] ?? "Semua truk ditolak.";
         toast.error("Tidak ada armada feasible", {
-          description: res.rejected_vehicles[0]?.reasons[0] ?? "Semua truk ditolak.",
+          description: `${name}: ${reason}`,
         });
       } else {
         toast.success(

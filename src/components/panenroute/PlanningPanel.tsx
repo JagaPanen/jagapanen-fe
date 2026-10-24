@@ -84,6 +84,7 @@ export function PlanningPanel({
     vehicle_id: string;
     vehicle_name: string;
     selectable: boolean;
+    isFeasible: boolean;
     hint: string;
   }[] = (() => {
     if (preview) {
@@ -93,12 +94,15 @@ export function PlanningPanel({
         vehicle_id: v.vehicle_id,
         vehicle_name: v.vehicle_name,
         selectable: true,
+        isFeasible: true,
         hint: `Layak · sisa ${Math.round(v.remaining_capacity_kg)} kg`,
       }));
+      // Rejected stay selectable so the capacity/reason text follows the chosen truck.
       const rejected = [...preview.rejected_vehicles].sort(byCapDesc).map((v) => ({
         vehicle_id: v.vehicle_id,
         vehicle_name: v.vehicle_name,
-        selectable: false,
+        selectable: true,
+        isFeasible: false,
         hint: v.reasons[0] ?? "Ditolak",
       }));
       return [...feasible, ...rejected];
@@ -109,9 +113,16 @@ export function PlanningPanel({
         vehicle_id: v.id,
         vehicle_name: v.name,
         selectable: true,
+        isFeasible: true,
         hint: `${v.capacity_kg.toLocaleString("id-ID")} kg · preview untuk kelayakan`,
       }));
   })();
+
+  const selectedFleetOption = fleetOptions.find((v) => v.vehicle_id === selectedVehicleId);
+  const selectedRejectedReason =
+    preview && selectedVehicleId
+      ? preview.rejected_vehicles.find((v) => v.vehicle_id === selectedVehicleId)?.reasons[0]
+      : undefined;
 
   return (
     <section className="w-full rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -292,10 +303,11 @@ export function PlanningPanel({
                       <span>
                         {v.vehicle_name}
                         {cap != null ? ` · ${cap.toLocaleString("id-ID")} kg` : ""}
+                        {preview ? (v.isFeasible ? " · layak" : " · ditolak") : ""}
                       </span>
                       <span
                         className={
-                          v.selectable ? "text-[10px] text-zinc-500" : "text-[10px] text-rose-600"
+                          v.isFeasible ? "text-[10px] text-zinc-500" : "text-[10px] text-rose-600"
                         }
                       >
                         {v.hint}
@@ -306,7 +318,11 @@ export function PlanningPanel({
               })}
             </SelectContent>
           </Select>
-          {preview && preview.feasible_vehicles.length === 0 ? (
+          {selectedRejectedReason ? (
+            <p className="text-xs text-rose-700 break-words">
+              {selectedFleetOption?.vehicle_name ?? "Armada"}: {selectedRejectedReason}
+            </p>
+          ) : preview && preview.feasible_vehicles.length === 0 ? (
             <p className="text-xs text-rose-700">
               Tidak ada armada yang muat total {totalVolumeKg.toLocaleString("id-ID")} kg. Kurangi
               volume panen atau tambah truk lebih besar di Armada.
@@ -323,6 +339,9 @@ export function PlanningPanel({
               Muatan {totalVolumeKg.toLocaleString("id-ID")} kg /{" "}
               {capacityKg.toLocaleString("id-ID")} kg
               {remaining != null ? ` · sisa ~${Math.round(remaining)} kg` : ""}
+              {selectedFleetOption && !selectedFleetOption.isFeasible
+                ? " · tidak layak untuk run"
+                : ""}
             </p>
           ) : (
             <p className="text-xs text-zinc-500">Kapasitas mengikuti armada yang dipilih (live).</p>
