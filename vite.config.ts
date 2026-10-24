@@ -12,6 +12,8 @@ const env = loadEnv("development", process.cwd(), "VITE_");
 const remoteApi = remoteApiBase(env["VITE_REMOTE_API_BASE_URL"]);
 const remoteOrigin = new URL(remoteApi).origin;
 
+// FE calls `/api/...` in dev. Backend routes live under `/api/v1/...` (health at `/health`).
+// Target must be origin-only; path rewrite supplies `/api/v1` (a path on `target` is dropped by http-proxy).
 const apiProxy = {
   "/api/health": {
     target: remoteOrigin,
@@ -19,9 +21,9 @@ const apiProxy = {
     rewrite: () => "/health",
   },
   "/api": {
-    target: remoteApi,
+    target: remoteOrigin,
     changeOrigin: true,
-    rewrite: (path: string) => path.replace(/^\/api/, ""),
+    rewrite: (path: string) => path.replace(/^\/api/, "/api/v1"),
   },
   "/health": {
     target: remoteOrigin,
