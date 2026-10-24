@@ -10,11 +10,23 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AppRouteImport } from './routes/app'
 import { Route as DemoRouteImport } from './routes/demo'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as SignupRouteImport } from './routes/signup'
+import { Route as AppCatalogRouteImport } from './routes/app/catalog'
+import { Route as AppFleetRouteImport } from './routes/app/fleet'
+import { Route as AppScenariosIndexRouteImport } from './routes/app/scenarios/index'
+import { Route as AppScenariosScenarioIdRouteImport } from './routes/app/scenarios/$scenarioId'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppRoute = AppRouteImport.update({
+  id: '/app',
+  path: '/app',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DemoRoute = DemoRouteImport.update({
@@ -22,31 +34,113 @@ const DemoRoute = DemoRouteImport.update({
   path: '/demo',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AppCatalogRoute = AppCatalogRouteImport.update({
+  id: '/catalog',
+  path: '/catalog',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppFleetRoute = AppFleetRouteImport.update({
+  id: '/fleet',
+  path: '/fleet',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppScenariosIndexRoute = AppScenariosIndexRouteImport.update({
+  id: '/scenarios/',
+  path: '/scenarios/',
+  getParentRoute: () => AppRoute,
+} as any)
+const AppScenariosScenarioIdRoute = AppScenariosScenarioIdRouteImport.update({
+  id: '/scenarios/$scenarioId',
+  path: '/scenarios/$scenarioId',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
   '/demo': typeof DemoRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
+  '/app/catalog': typeof AppCatalogRoute
+  '/app/fleet': typeof AppFleetRoute
+  '/app/scenarios/$scenarioId': typeof AppScenariosScenarioIdRoute
+  '/app/scenarios/': typeof AppScenariosIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
   '/demo': typeof DemoRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
+  '/app/catalog': typeof AppCatalogRoute
+  '/app/fleet': typeof AppFleetRoute
+  '/app/scenarios/$scenarioId': typeof AppScenariosScenarioIdRoute
+  '/app/scenarios': typeof AppScenariosIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/app': typeof AppRouteWithChildren
   '/demo': typeof DemoRoute
+  '/login': typeof LoginRoute
+  '/signup': typeof SignupRoute
+  '/app/catalog': typeof AppCatalogRoute
+  '/app/fleet': typeof AppFleetRoute
+  '/app/scenarios/$scenarioId': typeof AppScenariosScenarioIdRoute
+  '/app/scenarios/': typeof AppScenariosIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/demo'
+  fullPaths:
+    | '/'
+    | '/app'
+    | '/demo'
+    | '/login'
+    | '/signup'
+    | '/app/catalog'
+    | '/app/fleet'
+    | '/app/scenarios/$scenarioId'
+    | '/app/scenarios/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/demo'
-  id: '__root__' | '/' | '/demo'
+  to:
+    | '/'
+    | '/app'
+    | '/demo'
+    | '/login'
+    | '/signup'
+    | '/app/catalog'
+    | '/app/fleet'
+    | '/app/scenarios/$scenarioId'
+    | '/app/scenarios'
+  id:
+    | '__root__'
+    | '/'
+    | '/app'
+    | '/demo'
+    | '/login'
+    | '/signup'
+    | '/app/catalog'
+    | '/app/fleet'
+    | '/app/scenarios/$scenarioId'
+    | '/app/scenarios/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AppRoute: typeof AppRouteWithChildren
   DemoRoute: typeof DemoRoute
+  LoginRoute: typeof LoginRoute
+  SignupRoute: typeof SignupRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +152,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/app': {
+      id: '/app'
+      path: '/app'
+      fullPath: '/app'
+      preLoaderRoute: typeof AppRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/demo': {
       id: '/demo'
       path: '/demo'
@@ -65,12 +166,73 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DemoRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/app/catalog': {
+      id: '/app/catalog'
+      path: '/catalog'
+      fullPath: '/app/catalog'
+      preLoaderRoute: typeof AppCatalogRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/fleet': {
+      id: '/app/fleet'
+      path: '/fleet'
+      fullPath: '/app/fleet'
+      preLoaderRoute: typeof AppFleetRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/scenarios/': {
+      id: '/app/scenarios/'
+      path: '/scenarios'
+      fullPath: '/app/scenarios/'
+      preLoaderRoute: typeof AppScenariosIndexRouteImport
+      parentRoute: typeof AppRoute
+    }
+    '/app/scenarios/$scenarioId': {
+      id: '/app/scenarios/$scenarioId'
+      path: '/scenarios/$scenarioId'
+      fullPath: '/app/scenarios/$scenarioId'
+      preLoaderRoute: typeof AppScenariosScenarioIdRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
+interface AppRouteChildren {
+  AppCatalogRoute: typeof AppCatalogRoute
+  AppFleetRoute: typeof AppFleetRoute
+  AppScenariosScenarioIdRoute: typeof AppScenariosScenarioIdRoute
+  AppScenariosIndexRoute: typeof AppScenariosIndexRoute
+}
+
+const AppRouteChildren: AppRouteChildren = {
+  AppCatalogRoute: AppCatalogRoute,
+  AppFleetRoute: AppFleetRoute,
+  AppScenariosScenarioIdRoute: AppScenariosScenarioIdRoute,
+  AppScenariosIndexRoute: AppScenariosIndexRoute,
+}
+
+const AppRouteWithChildren = AppRoute._addFileChildren(AppRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AppRoute: AppRouteWithChildren,
   DemoRoute: DemoRoute,
+  LoginRoute: LoginRoute,
+  SignupRoute: SignupRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
