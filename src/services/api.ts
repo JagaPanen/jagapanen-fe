@@ -1459,7 +1459,7 @@ export async function getBillingUsage(): Promise<BillingUsage> {
 }
 
 export async function startBillingCheckout(
-  plan: "starter" | "fleet",
+  plan: "pro" | "basic" = "pro",
   activateStub = false,
 ): Promise<CheckoutResponse> {
   return apiJson<CheckoutResponse>("/billing/checkout", {
