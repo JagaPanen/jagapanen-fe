@@ -277,7 +277,15 @@ export function PlannerPage({
     try {
       const res = await previewOptimization(scenarioId);
       setPreview(res);
-      setSelectedVehicleId(res.feasible_vehicles[0]?.vehicle_id ?? null);
+      // Prefer largest capacity among feasible (API sorts tightest/smallest first).
+      const preferred = [...res.feasible_vehicles].sort((a, b) => {
+        const ca =
+          vehicles.find((v) => v.id === a.vehicle_id)?.capacity_kg ?? a.remaining_capacity_kg;
+        const cb =
+          vehicles.find((v) => v.id === b.vehicle_id)?.capacity_kg ?? b.remaining_capacity_kg;
+        return cb - ca;
+      })[0];
+      setSelectedVehicleId(preferred?.vehicle_id ?? null);
       setComparisonData(EMPTY_COMPARISON);
       await refreshScenarioStatus(scenarioId);
       if (res.feasible_vehicles.length === 0) {

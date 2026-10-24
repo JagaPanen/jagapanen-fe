@@ -65,7 +65,9 @@ export function PlanningPanel({
     (selected && "capacity_kg" in selected
       ? selected.capacity_kg
       : vehicles.find((v) => v.id === selectedVehicleId)?.capacity_kg) ?? null;
-  const previewVehicle = preview?.feasible_vehicles.find((v) => v.vehicle_id === selectedVehicleId);
+  const previewVehicle =
+    preview?.feasible_vehicles.find((v) => v.vehicle_id === selectedVehicleId) ??
+    preview?.rejected_vehicles.find((v) => v.vehicle_id === selectedVehicleId);
   const remaining =
     previewVehicle?.remaining_capacity_kg ??
     (capacityKg != null ? capacityKg - totalVolumeKg : null);
@@ -73,6 +75,43 @@ export function PlanningPanel({
   const criticalCount =
     risk?.results.filter((r) => r.priority_level === "critical" || r.urgency_score >= 60).length ??
     0;
+
+  const capacityOf = (vehicleId: string) =>
+    vehicles.find((f) => f.id === vehicleId)?.capacity_kg ?? null;
+
+  /** All org fleets for the picker: feasible first (largest capacity), then rejected. */
+  const fleetOptions: {
+    vehicle_id: string;
+    vehicle_name: string;
+    selectable: boolean;
+    hint: string;
+  }[] = (() => {
+    if (preview) {
+      const byCapDesc = (a: { vehicle_id: string }, b: { vehicle_id: string }) =>
+        (capacityOf(b.vehicle_id) ?? 0) - (capacityOf(a.vehicle_id) ?? 0);
+      const feasible = [...preview.feasible_vehicles].sort(byCapDesc).map((v) => ({
+        vehicle_id: v.vehicle_id,
+        vehicle_name: v.vehicle_name,
+        selectable: true,
+        hint: `Layak · sisa ${Math.round(v.remaining_capacity_kg)} kg`,
+      }));
+      const rejected = [...preview.rejected_vehicles].sort(byCapDesc).map((v) => ({
+        vehicle_id: v.vehicle_id,
+        vehicle_name: v.vehicle_name,
+        selectable: false,
+        hint: v.reasons[0] ?? "Ditolak",
+      }));
+      return [...feasible, ...rejected];
+    }
+    return [...vehicles]
+      .sort((a, b) => b.capacity_kg - a.capacity_kg)
+      .map((v) => ({
+        vehicle_id: v.id,
+        vehicle_name: v.name,
+        selectable: true,
+        hint: `${v.capacity_kg.toLocaleString("id-ID")} kg · preview untuk kelayakan`,
+      }));
+  })();
 
   return (
     <section className="w-full rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
@@ -205,10 +244,10 @@ export function PlanningPanel({
               {preview.rejected_vehicles.length > 0 ? (
                 <div className="flex items-start gap-1.5 text-rose-700 pt-1">
                   <AlertTriangle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
-                  <div>
+                  <div className="min-w-0 space-y-0.5">
                     <p className="font-medium">Rejected: {preview.rejected_vehicles.length}</p>
-                    {preview.rejected_vehicles.slice(0, 3).map((v) => (
-                      <p key={v.vehicle_id} className="text-[10px] text-rose-600/90">
+                    {preview.rejected_vehicles.map((v) => (
+                      <p key={v.vehicle_id} className="text-[10px] text-rose-600/90 break-words">
                         {v.vehicle_name}: {v.reasons[0] ?? "tidak layak"}
                       </p>
                     ))}
@@ -226,24 +265,53 @@ export function PlanningPanel({
           <Select
             {...(selectedVehicleId ? { value: selectedVehicleId } : {})}
             onValueChange={onSelectVehicle}
-            disabled={!preview || preview.feasible_vehicles.length === 0}
+            disabled={fleetOptions.length === 0}
           >
             <SelectTrigger className="h-8 w-full border-slate-200 text-xs bg-white">
-              <SelectValue placeholder="Pilih armada feasible" />
+              <SelectValue
+                placeholder={
+                  fleetOptions.length === 0
+                    ? "Belum ada armada org"
+                    : preview
+                      ? "Pilih armada (layak / tersedia)"
+                      : "Lihat armada tersedia"
+                }
+              />
             </SelectTrigger>
             <SelectContent>
-              {(preview?.feasible_vehicles ?? []).map((v) => {
-                const fleet = vehicles.find((f) => f.id === v.vehicle_id);
-                const cap = fleet?.capacity_kg;
+              {fleetOptions.map((v) => {
+                const cap = capacityOf(v.vehicle_id);
                 return (
-                  <SelectItem key={v.vehicle_id} value={v.vehicle_id} className="text-xs">
-                    {v.vehicle_name}
-                    {cap != null ? ` · ${cap.toLocaleString("id-ID")} kg` : ""}
+                  <SelectItem
+                    key={v.vehicle_id}
+                    value={v.vehicle_id}
+                    disabled={!v.selectable}
+                    className="text-xs"
+                  >
+                    <span className="flex flex-col items-start gap-0.5 py-0.5">
+                      <span>
+                        {v.vehicle_name}
+                        {cap != null ? ` · ${cap.toLocaleString("id-ID")} kg` : ""}
+                      </span>
+                      <span
+                        className={
+                          v.selectable ? "text-[10px] text-zinc-500" : "text-[10px] text-rose-600"
+                        }
+                      >
+                        {v.hint}
+                      </span>
+                    </span>
                   </SelectItem>
                 );
               })}
             </SelectContent>
           </Select>
+          {preview && preview.feasible_vehicles.length === 0 ? (
+            <p className="text-xs text-rose-700">
+              Tidak ada armada yang muat total {totalVolumeKg.toLocaleString("id-ID")} kg. Kurangi
+              volume panen atau tambah truk lebih besar di Armada.
+            </p>
+          ) : null}
           {capacityKg != null ? (
             <p
               className={
