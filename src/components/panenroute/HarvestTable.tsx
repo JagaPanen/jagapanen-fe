@@ -120,9 +120,20 @@ export function HarvestTable({
               </tr>
             ) : (
               rows.map((h) => {
-                const u = urgencyScore(h);
-                const critical = u >= 60;
-                const warn = u >= 30 && u < 60;
+                const u = typeof h.urgency === "number" ? Math.round(h.urgency) : urgencyScore(h);
+                const critical =
+                  h.priorityLevel === "critical" || (!h.priorityLevel && u >= 60) || u >= 60;
+                const warn =
+                  h.priorityLevel === "high" ||
+                  h.priorityLevel === "medium" ||
+                  (!critical && u >= 30 && u < 60);
+                const statusLabel = critical
+                  ? "Kritis"
+                  : h.priorityLevel === "high"
+                    ? "Tinggi"
+                    : warn
+                      ? "Perhatian"
+                      : "Aman";
                 return (
                   <tr key={h.id} className="border-t border-slate-100 hover:bg-slate-50/70">
                     <td className="px-4 py-2 font-mono text-zinc-500">{h.id}</td>
@@ -130,7 +141,14 @@ export function HarvestTable({
                     <td className="px-4 py-2 text-zinc-600">{h.lokasi}</td>
                     <td className="px-4 py-2 text-zinc-900">{h.volume} kg</td>
                     <td className="px-4 py-2 text-zinc-600">{h.jamSejakPanen} jam</td>
-                    <td className="px-4 py-2 text-zinc-600">{h.shelfLife} jam</td>
+                    <td className="px-4 py-2 text-zinc-600">
+                      {h.shelfLife} jam
+                      {typeof h.maxTransitHours === "number" ? (
+                        <span className="block text-[10px] text-zinc-400">
+                          max transit {h.maxTransitHours.toFixed(1)} jam
+                        </span>
+                      ) : null}
+                    </td>
                     <td className="px-4 py-2">
                       <span className="text-zinc-900">Kelas {h.kelas}</span>
                       <span className="block text-[10px] text-zinc-500">{h.kelasLabel}</span>
@@ -143,7 +161,7 @@ export function HarvestTable({
                               "h-1.5 rounded-full " +
                               (critical ? "bg-rose-500" : warn ? "bg-amber-500" : "bg-emerald-500")
                             }
-                            style={{ width: `${u}%` }}
+                            style={{ width: `${Math.min(100, u)}%` }}
                           />
                         </div>
                         <span className="font-semibold text-zinc-900">{u}</span>
@@ -152,15 +170,15 @@ export function HarvestTable({
                     <td className="px-4 py-2">
                       {critical ? (
                         <Badge className="bg-rose-100 text-rose-700 hover:bg-rose-100">
-                          Kritis
+                          {statusLabel}
                         </Badge>
                       ) : warn ? (
                         <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100">
-                          Perhatian
+                          {statusLabel}
                         </Badge>
                       ) : (
                         <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100">
-                          Aman
+                          {statusLabel}
                         </Badge>
                       )}
                     </td>

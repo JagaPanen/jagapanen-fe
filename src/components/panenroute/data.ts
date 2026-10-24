@@ -10,7 +10,10 @@ export type Harvest = {
   nilaiPerKg: number;
   lat: number;
   lng: number;
+  /** From POST /risk/score when available */
   urgency?: number;
+  priorityLevel?: string;
+  maxTransitHours?: number;
 };
 
 export const LOCATION_COORDINATES: Record<string, [number, number]> = {
