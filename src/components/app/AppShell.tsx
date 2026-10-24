@@ -1,13 +1,16 @@
 import { useEffect, useState } from "react";
 import { Link, Outlet, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
+import { UsageBanner } from "@/components/app/UsageBanner";
 import { clearAuthSession, getAccessToken, getAuthMeta, isGuestSession } from "@/lib/auth-session";
+import { getBillingUsage, type BillingUsage } from "@/services/api";
 
 const NAV = [
   { to: "/app/scenarios" as const, label: "Skenario" },
   { to: "/app/history" as const, label: "Riwayat" },
   { to: "/app/fleet" as const, label: "Armada" },
   { to: "/app/catalog" as const, label: "Katalog" },
+  { to: "/app/settings/billing" as const, label: "Billing" },
 ];
 
 export function AppShell() {
@@ -15,6 +18,7 @@ export function AppShell() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const [ready, setReady] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
+  const [usage, setUsage] = useState<BillingUsage | null>(null);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -25,18 +29,21 @@ export function AppShell() {
     }
     setEmail(meta.email ?? null);
     setReady(true);
-  }, [navigate]);
+    void getBillingUsage()
+      .then(setUsage)
+      .catch(() => setUsage(null));
+  }, [navigate, pathname]);
 
   if (!ready) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-slate-50 text-sm text-zinc-500">
+      <div className="flex min-h-dvh items-center justify-center bg-slate-50 text-sm text-zinc-500">
         Memeriksa sesi...
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-slate-50">
+    <div className="flex min-h-dvh flex-col bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-3 px-3.5 py-3 sm:px-5">
           <div className="flex items-center gap-6">
@@ -82,6 +89,7 @@ export function AppShell() {
           </div>
         </div>
       </header>
+      <UsageBanner usage={usage} />
       <Outlet />
     </div>
   );

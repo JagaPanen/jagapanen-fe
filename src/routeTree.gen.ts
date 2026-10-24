@@ -19,6 +19,7 @@ import { Route as AppFleetRouteImport } from './routes/app/fleet'
 import { Route as AppHistoryRouteImport } from './routes/app/history'
 import { Route as AppScenariosIndexRouteImport } from './routes/app/scenarios/index'
 import { Route as AppScenariosScenarioIdRouteImport } from './routes/app/scenarios/$scenarioId'
+import { Route as AppSettingsBillingRouteImport } from './routes/app/settings/billing'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -70,6 +71,11 @@ const AppScenariosScenarioIdRoute = AppScenariosScenarioIdRouteImport.update({
   path: '/scenarios/$scenarioId',
   getParentRoute: () => AppRoute,
 } as any)
+const AppSettingsBillingRoute = AppSettingsBillingRouteImport.update({
+  id: '/settings/billing',
+  path: '/settings/billing',
+  getParentRoute: () => AppRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -81,6 +87,7 @@ export interface FileRoutesByFullPath {
   '/app/fleet': typeof AppFleetRoute
   '/app/history': typeof AppHistoryRoute
   '/app/scenarios/$scenarioId': typeof AppScenariosScenarioIdRoute
+  '/app/settings/billing': typeof AppSettingsBillingRoute
   '/app/scenarios/': typeof AppScenariosIndexRoute
 }
 export interface FileRoutesByTo {
@@ -93,6 +100,7 @@ export interface FileRoutesByTo {
   '/app/fleet': typeof AppFleetRoute
   '/app/history': typeof AppHistoryRoute
   '/app/scenarios/$scenarioId': typeof AppScenariosScenarioIdRoute
+  '/app/settings/billing': typeof AppSettingsBillingRoute
   '/app/scenarios': typeof AppScenariosIndexRoute
 }
 export interface FileRoutesById {
@@ -106,6 +114,7 @@ export interface FileRoutesById {
   '/app/fleet': typeof AppFleetRoute
   '/app/history': typeof AppHistoryRoute
   '/app/scenarios/$scenarioId': typeof AppScenariosScenarioIdRoute
+  '/app/settings/billing': typeof AppSettingsBillingRoute
   '/app/scenarios/': typeof AppScenariosIndexRoute
 }
 export interface FileRouteTypes {
@@ -120,6 +129,7 @@ export interface FileRouteTypes {
     | '/app/fleet'
     | '/app/history'
     | '/app/scenarios/$scenarioId'
+    | '/app/settings/billing'
     | '/app/scenarios/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -132,6 +142,7 @@ export interface FileRouteTypes {
     | '/app/fleet'
     | '/app/history'
     | '/app/scenarios/$scenarioId'
+    | '/app/settings/billing'
     | '/app/scenarios'
   id:
     | '__root__'
@@ -144,6 +155,7 @@ export interface FileRouteTypes {
     | '/app/fleet'
     | '/app/history'
     | '/app/scenarios/$scenarioId'
+    | '/app/settings/billing'
     | '/app/scenarios/'
   fileRoutesById: FileRoutesById
 }
@@ -227,6 +239,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppScenariosScenarioIdRouteImport
       parentRoute: typeof AppRoute
     }
+    '/app/settings/billing': {
+      id: '/app/settings/billing'
+      path: '/settings/billing'
+      fullPath: '/app/settings/billing'
+      preLoaderRoute: typeof AppSettingsBillingRouteImport
+      parentRoute: typeof AppRoute
+    }
   }
 }
 
@@ -235,6 +254,7 @@ interface AppRouteChildren {
   AppFleetRoute: typeof AppFleetRoute
   AppHistoryRoute: typeof AppHistoryRoute
   AppScenariosScenarioIdRoute: typeof AppScenariosScenarioIdRoute
+  AppSettingsBillingRoute: typeof AppSettingsBillingRoute
   AppScenariosIndexRoute: typeof AppScenariosIndexRoute
 }
 
@@ -243,6 +263,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppFleetRoute: AppFleetRoute,
   AppHistoryRoute: AppHistoryRoute,
   AppScenariosScenarioIdRoute: AppScenariosScenarioIdRoute,
+  AppSettingsBillingRoute: AppSettingsBillingRoute,
   AppScenariosIndexRoute: AppScenariosIndexRoute,
 }
 

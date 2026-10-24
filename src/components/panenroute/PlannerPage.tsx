@@ -392,6 +392,15 @@ export function PlannerPage({
         setSignupReason("limit");
         setSignupOpen(true);
       }
+      if (!guestMode && /limit|429|Upgrade|Pilot/i.test(message)) {
+        toast.message("Kuota plan tercapai", {
+          description: "Buka Billing untuk upgrade ke Starter atau Fleet.",
+          action: {
+            label: "Billing",
+            onClick: () => void navigate({ to: "/app/settings/billing" }),
+          },
+        });
+      }
     } finally {
       setIsCalculating(false);
     }
