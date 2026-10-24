@@ -172,6 +172,7 @@ export interface RouteResultSchema {
 
 export interface OptimizationResponse {
   scenario_id: string;
+  run_id?: string | null;
   mode: string;
   baseline_route: RouteResultSchema;
   spoilage_aware_route: RouteResultSchema;
@@ -221,6 +222,28 @@ export interface OptimizationResult {
   quality_violations_count: number;
   stops: RouteStop[];
   explainability_reasons: string[];
+  /** GeoJSON LineString JSON string from Mapbox/OSRM/mock when available */
+  geometry?: string | undefined;
+}
+
+export interface OptimizationRunSummary {
+  id: string;
+  scenario_id: string;
+  scenario_name?: string | null;
+  created_at: string;
+  formula_version: string;
+  alpha: number;
+  beta: number;
+  gamma: number;
+  food_loss_avoided_kg: number;
+  economic_loss_avoided_idr: number;
+  additional_logistics_cost_idr: number;
+  net_value_idr: number;
+}
+
+export interface OptimizationRunDetail extends OptimizationRunSummary {
+  baseline_route?: RouteResultSchema | null;
+  spoilage_aware_route?: RouteResultSchema | null;
 }
 
 export interface ComparisonData {
@@ -708,9 +731,7 @@ export interface FeasibilityPreviewResponse {
   consolidation_options: ConsolidationOption[];
 }
 
-export async function previewOptimization(
-  scenarioId: string,
-): Promise<FeasibilityPreviewResponse> {
+export async function previewOptimization(scenarioId: string): Promise<FeasibilityPreviewResponse> {
   return apiJson<FeasibilityPreviewResponse>("/optimization/preview", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -743,11 +764,11 @@ export async function createDemoSession(): Promise<DemoSessionResponse> {
   const meta: AuthMeta = {
     role: data.role === "guest" ? "guest" : "user",
     orgId: data.org_id,
-    scenarioId: data.scenario_id,
-    runsUsed: data.runs_used,
-    runsRemaining: data.runs_remaining,
+    scenarioId: data.scenario_id ?? null,
+    runsUsed: data.runs_used ?? null,
+    runsRemaining: data.runs_remaining ?? null,
     expiresAt: data.expires_at,
-    email: data.email,
+    email: data.email ?? null,
   };
   setAuthSession(data.access_token, meta);
   return data;
@@ -756,7 +777,7 @@ export async function createDemoSession(): Promise<DemoSessionResponse> {
 export async function signup(payload: {
   email: string;
   password: string;
-  full_name?: string;
+  full_name?: string | undefined;
   organization_name: string;
 }): Promise<DemoSessionResponse> {
   const data = await apiJson<DemoSessionResponse>("/auth/signup", {
@@ -767,7 +788,7 @@ export async function signup(payload: {
   setAuthSession(data.access_token, {
     role: "user",
     orgId: data.org_id,
-    email: data.email,
+    email: data.email ?? null,
     expiresAt: data.expires_at,
   });
   return data;
@@ -785,7 +806,7 @@ export async function login(payload: {
   setAuthSession(data.access_token, {
     role: "user",
     orgId: data.org_id,
-    email: data.email,
+    email: data.email ?? null,
     expiresAt: data.expires_at,
   });
   return data;
@@ -899,7 +920,77 @@ function routeToOptimizationResult(
     quality_violations_count: 0,
     stops,
     explainability_reasons: [],
+    geometry: route.geometry || undefined,
   };
+}
+
+export async function listOptimizationRuns(scenarioId?: string): Promise<OptimizationRunSummary[]> {
+  const q = scenarioId ? `?scenario_id=${encodeURIComponent(scenarioId)}` : "";
+  return apiJson<OptimizationRunSummary[]>(`/optimization/runs${q}`, {
+    headers: authHeaders(),
+  });
+}
+
+export async function getOptimizationRun(runId: string): Promise<OptimizationRunDetail> {
+  return apiJson<OptimizationRunDetail>(`/optimization/runs/${runId}`, {
+    headers: authHeaders(),
+  });
+}
+
+export function mapRunDetailToComparison(
+  detail: OptimizationRunDetail,
+  harvests: Array<{
+    id: string;
+    label?: string;
+    lokasi?: string;
+    komoditas?: string;
+    kelas?: string;
+    volume?: number;
+  }> = [],
+): ComparisonData {
+  if (!detail.baseline_route || !detail.spoilage_aware_route) {
+    throw new Error("Run tidak memiliki baseline / spoilage_aware route");
+  }
+  return mapOptimizationResponse(
+    {
+      scenario_id: detail.scenario_id,
+      run_id: detail.id,
+      mode: "balanced",
+      baseline_route: detail.baseline_route,
+      spoilage_aware_route: detail.spoilage_aware_route,
+      estimated_food_loss_avoided_kg: detail.food_loss_avoided_kg,
+      economic_loss_avoided_idr: detail.economic_loss_avoided_idr,
+      additional_logistics_cost_idr: detail.additional_logistics_cost_idr,
+      net_value_idr: detail.net_value_idr,
+    },
+    harvests,
+  );
+}
+
+/** Org-only: download CSV/PDF decision report. Throws on 403 for guests. */
+export async function downloadOptimizationReport(
+  runId: string,
+  format: "csv" | "pdf" = "csv",
+): Promise<void> {
+  const res = await fetch(apiUrl(`/optimization/runs/${runId}/report?format=${format}`), {
+    headers: authHeaders(),
+  });
+  if (res.status === 403) {
+    throw new Error("403: Export requires an organization account");
+  }
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(parseApiDetail(text, `Report download failed (${res.status})`));
+  }
+  const blob = await res.blob();
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `jagapanen-run-${runId}.${format}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 /** Map collection OptimizationResponse → ComparisonView model. Throws if routes missing. */
