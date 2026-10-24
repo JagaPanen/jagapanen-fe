@@ -15,13 +15,17 @@ import { EditHarvestDialog } from "./Dialogs";
 export function HarvestTable({
   harvests,
   isLoading = false,
+  isBackendConnected = false,
   onDelete,
   onUpdate,
+  onReload,
 }: {
   harvests: Harvest[];
   isLoading?: boolean;
-  onDelete?: (id: string) => void;
+  isBackendConnected?: boolean;
+  onDelete?: (id: string) => void | Promise<void>;
   onUpdate?: (h: Harvest) => void;
+  onReload?: () => void | Promise<void>;
 }) {
   const [q, setQ] = useState("");
   const [kelas, setKelas] = useState("all");
@@ -192,7 +196,12 @@ export function HarvestTable({
         harvest={editingHarvest}
         open={!!editingHarvest}
         onOpenChange={(open) => !open && setEditingHarvest(null)}
+        isBackendConnected={isBackendConnected}
         onSave={(updated) => onUpdate?.(updated)}
+        onSaveSuccess={async () => {
+          setEditingHarvest(null);
+          await onReload?.();
+        }}
       />
     </div>
   );

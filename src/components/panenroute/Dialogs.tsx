@@ -20,14 +20,15 @@ import {
 } from "@/components/ui/select";
 import { Info, Plus, MapPin } from "lucide-react";
 import { toast } from "sonner";
-import { createHarvest, type HarvestCreatePayload } from "@/services/api";
 import {
-  LOCATION_COORDINATES,
-  LOCATION_PRESETS,
-  DEFAULT_COORDINATE,
-  urgencyScore,
-  type Harvest,
-} from "./data";
+  createHarvest,
+  getCommodities,
+  isUuidLike,
+  updateHarvest,
+  type Commodity,
+  type HarvestCreatePayload,
+} from "@/services/api";
+import { LOCATION_COORDINATES, LOCATION_PRESETS, DEFAULT_COORDINATE, type Harvest } from "./data";
 
 export function FormulaDialog() {
   return (
@@ -111,58 +112,46 @@ const CLASS_LABELS: Record<Harvest["kelas"], string> = {
   E: "Pangan Pokok (Tahan Lama)",
 };
 
-const COMMODITY_PRESETS = [
-  { name: "Tomat", kelas: "A", shelf: 48, price: 15000 },
-  { name: "Bayam (Sayur Daun)", kelas: "A", shelf: 24, price: 12000 },
-  { name: "Stroberi", kelas: "A", shelf: 36, price: 60000 },
-  { name: "Cabai Rawit Merah", kelas: "B", shelf: 96, price: 45000 },
-  { name: "Paprika", kelas: "B", shelf: 120, price: 35000 },
-  { name: "Kubis", kelas: "C", shelf: 240, price: 8000 },
-  { name: "Pisang Ambon", kelas: "C", shelf: 168, price: 14000 },
-  { name: "Kentang Granola", kelas: "D", shelf: 720, price: 14000 },
-  { name: "Bawang Merah", kelas: "D", shelf: 480, price: 32000 },
-  { name: "Beras Medium", kelas: "E", shelf: 4320, price: 13500 },
-];
-
-function firstCommodityPreset() {
-  const preset = COMMODITY_PRESETS[0];
-  if (!preset) {
-    throw new Error("COMMODITY_PRESETS must not be empty");
-  }
-  return preset;
-}
-
-const defaultCommodity = firstCommodityPreset();
-
-const COMMODITY_UUID_MAP: Record<string, string> = {
-  Tomat: "aa734536-8c6d-478f-b53e-2d97485f7835",
-  "Bayam (Sayur Daun)": "a683daaf-b319-4b44-992b-0186a61b0588",
-  Stroberi: "7263cdc3-3279-4a49-ba79-8760d495accc",
-  "Cabai Rawit Merah": "0b89dc68-f06e-438a-acec-6b282ed535e9",
-  Paprika: "f9ef4982-8374-4778-85ef-01558917fc30",
-  Kubis: "0883ddf3-6764-4631-a615-483e02506517",
-  "Pisang Ambon": "b2d26b6a-eddf-4e52-94bc-c4cd0384d71e",
-  "Kentang Granola": "38fd7642-4b51-4c66-8984-17b863c777f3",
-  "Bawang Merah": "404487ca-15e0-4062-a7b7-f18de868985a",
-  "Beras Medium": "18fb4952-7f3a-4a59-aa0b-680d9b31b9a2",
-};
-
 const DESTINATION_COORDINATES: Record<string, { lat: number; lng: number }> = {
   "Pasar Induk Caringin": { lat: -6.92, lng: 107.61 },
   "Pasar Induk Giwangan": { lat: -7.834, lng: 110.3912 },
   "Gudang Sentra Koperasi": { lat: -7.502, lng: 110.2185 },
 };
 
+function applyCommodityFields(
+  commodity: Commodity,
+  setters: {
+    setCommodityId: (v: string) => void;
+    setKomoditas: (v: string) => void;
+    setKelas: (v: Harvest["kelas"]) => void;
+    setShelfLife: (v: string) => void;
+    setNilaiPerKg: (v: string) => void;
+  },
+) {
+  setters.setCommodityId(commodity.id);
+  setters.setKomoditas(commodity.name);
+  setters.setKelas(commodity.perishability_class);
+  setters.setShelfLife(String(commodity.shelf_life_hours));
+  setters.setNilaiPerKg(String(commodity.default_price_idr_per_kg));
+}
+
 export function AddHarvestDialog({
   onAdd,
   onAddSuccess,
+  scenarioId,
+  isBackendConnected = false,
 }: {
   onAdd?: (h: Harvest) => void;
   onAddSuccess?: () => Promise<void> | void;
+  scenarioId?: string | null;
+  isBackendConnected?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [komoditas, setKomoditas] = useState(defaultCommodity.name);
+  const [catalog, setCatalog] = useState<Commodity[]>([]);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [commodityId, setCommodityId] = useState("");
+  const [komoditas, setKomoditas] = useState("");
   const [presetLocation, setPresetLocation] = useState(
     LOCATION_PRESETS[0] || "Titik A — Desa Sawangan",
   );
@@ -175,20 +164,53 @@ export function AddHarvestDialog({
   );
   const [volume, setVolume] = useState("300");
   const [jamSejakPanen, setJamSejakPanen] = useState("6");
-  const [shelfLife, setShelfLife] = useState(String(defaultCommodity.shelf));
-  const [kelas, setKelas] = useState<Harvest["kelas"]>(defaultCommodity.kelas as Harvest["kelas"]);
-  const [nilaiPerKg, setNilaiPerKg] = useState(String(defaultCommodity.price));
+  const [shelfLife, setShelfLife] = useState("48");
+  const [kelas, setKelas] = useState<Harvest["kelas"]>("A");
+  const [nilaiPerKg, setNilaiPerKg] = useState("15000");
   const [initialCondition, setInitialCondition] = useState("fresh");
   const [destination, setDestination] = useState("Pasar Induk Caringin");
 
-  const handleCommoditySelect = (val: string) => {
-    setKomoditas(val);
-    const p = COMMODITY_PRESETS.find((c) => c.name === val);
-    if (p) {
-      setKelas(p.kelas as Harvest["kelas"]);
-      setShelfLife(String(p.shelf));
-      setNilaiPerKg(String(p.price));
-    }
+  useEffect(() => {
+    if (!open) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const rows = await getCommodities();
+        if (cancelled) return;
+        setCatalog(rows);
+        setCatalogError(rows.length === 0 ? "Katalog komoditas kosong." : null);
+        const first = rows[0];
+        if (first) {
+          applyCommodityFields(first, {
+            setCommodityId,
+            setKomoditas,
+            setKelas,
+            setShelfLife,
+            setNilaiPerKg,
+          });
+        }
+      } catch (err) {
+        if (cancelled) return;
+        const message = err instanceof Error ? err.message : String(err);
+        setCatalog([]);
+        setCatalogError(message);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  const handleCommoditySelect = (id: string) => {
+    const selected = catalog.find((c) => c.id === id);
+    if (!selected) return;
+    applyCommodityFields(selected, {
+      setCommodityId,
+      setKomoditas,
+      setKelas,
+      setShelfLife,
+      setNilaiPerKg,
+    });
   };
 
   const handleLocationChange = (val: string) => {
@@ -203,7 +225,7 @@ export function AddHarvestDialog({
   };
 
   const submit = async () => {
-    if (!komoditas || !volume) return;
+    if (!komoditas || !volume || !commodityId) return;
     setIsSubmitting(true);
     const finalLocation =
       presetLocation === "custom" ? customLocationName || "Lokasi Kustom" : presetLocation;
@@ -214,7 +236,7 @@ export function AddHarvestDialog({
     const destCoord = DESTINATION_COORDINATES[destination] || { lat: -6.92, lng: 107.61 };
 
     const payload: HarvestCreatePayload = {
-      commodity_id: COMMODITY_UUID_MAP[komoditas] || "aa734536-8c6d-478f-b53e-2d97485f7835",
+      commodity_id: commodityId,
       label: `${komoditas} (${finalLocation})`,
       location_lat: Number(lat) || DEFAULT_COORDINATE[0],
       location_lng: Number(lng) || DEFAULT_COORDINATE[1],
@@ -241,30 +263,37 @@ export function AddHarvestDialog({
       urgency: Math.min(100, Math.round((hours / shelf) * 100)),
     };
 
-    try {
-      const created = await createHarvest(payload);
-      toast.success(`Data panen ${komoditas} (${volume} kg) berhasil disimpan ke database!`);
-      if (onAddSuccess) {
-        await onAddSuccess();
-      } else {
-        onAdd?.({
-          ...localHarvest,
-          id: created.id || localHarvest.id,
+    if (isBackendConnected) {
+      if (!scenarioId) {
+        toast.error("Gagal menyimpan panen", {
+          description: "Skenario belum siap. Muat ulang halaman setelah backend aktif.",
         });
+        setIsSubmitting(false);
+        return;
       }
-      setOpen(false);
-      setVolume("300");
-      setJamSejakPanen("6");
-    } catch (err: unknown) {
-      console.warn("Gagal menyimpan panen ke backend, beralih ke state lokal:", err);
-      toast.info(`Mode lokal: Panen ${komoditas} (${volume} kg) ditambahkan ke antarmuka.`);
-      onAdd?.(localHarvest);
-      setOpen(false);
-      setVolume("300");
-      setJamSejakPanen("6");
-    } finally {
-      setIsSubmitting(false);
+      try {
+        await createHarvest(payload, scenarioId);
+        toast.success(`Data panen ${komoditas} (${volume} kg) berhasil disimpan ke database!`);
+        await onAddSuccess?.();
+        setOpen(false);
+        setVolume("300");
+        setJamSejakPanen("6");
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("Gagal menyimpan panen ke backend:", err);
+        toast.error("Gagal menyimpan panen", { description: message });
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
     }
+
+    toast.info(`Mode lokal: Panen ${komoditas} (${volume} kg) ditambahkan ke antarmuka.`);
+    onAdd?.(localHarvest);
+    setOpen(false);
+    setVolume("300");
+    setJamSejakPanen("6");
+    setIsSubmitting(false);
   };
 
   return (
@@ -290,18 +319,23 @@ export function AddHarvestDialog({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div className="space-y-1.5">
             <Label className="text-xs text-zinc-600">Pilihan Komoditas</Label>
-            <Select value={komoditas} onValueChange={handleCommoditySelect}>
+            <Select
+              value={commodityId}
+              onValueChange={handleCommoditySelect}
+              disabled={catalog.length === 0}
+            >
               <SelectTrigger className="border-slate-200 text-xs">
-                <SelectValue />
+                <SelectValue placeholder={catalogError || "Memuat katalog..."} />
               </SelectTrigger>
               <SelectContent>
-                {COMMODITY_PRESETS.map((c) => (
-                  <SelectItem key={c.name} value={c.name} className="text-xs">
-                    {c.name} (Kelas {c.kelas})
+                {catalog.map((c) => (
+                  <SelectItem key={c.id} value={c.id} className="text-xs">
+                    {c.name} (Kelas {c.perishability_class})
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {catalogError && <p className="text-[10px] text-amber-700">{catalogError}</p>}
           </div>
 
           <div className="space-y-1.5">
@@ -448,11 +482,15 @@ export function EditHarvestDialog({
   open,
   onOpenChange,
   onSave,
+  onSaveSuccess,
+  isBackendConnected = false,
 }: {
   harvest: Harvest | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSave: (h: Harvest) => void;
+  onSaveSuccess?: () => Promise<void> | void;
+  isBackendConnected?: boolean;
 }) {
   const [komoditas, setKomoditas] = useState("");
   const [presetLocation, setPresetLocation] = useState("");
@@ -464,6 +502,7 @@ export function EditHarvestDialog({
   const [shelfLife, setShelfLife] = useState("48");
   const [kelas, setKelas] = useState<Harvest["kelas"]>("A");
   const [nilaiPerKg, setNilaiPerKg] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (harvest) {
@@ -497,7 +536,7 @@ export function EditHarvestDialog({
     }
   };
 
-  const submit = () => {
+  const submit = async () => {
     if (!harvest || !komoditas || !volume) return;
     const finalLocation =
       presetLocation === "custom" ? customLocationName || "Lokasi Kustom" : presetLocation;
@@ -517,6 +556,30 @@ export function EditHarvestDialog({
       lng: Number(lng) || DEFAULT_COORDINATE[1],
       urgency: Math.min(100, Math.round((hours / shelf) * 100)),
     };
+
+    if (isBackendConnected && isUuidLike(harvest.id)) {
+      setIsSubmitting(true);
+      try {
+        await updateHarvest(harvest.id, {
+          label: `${komoditas} (${finalLocation})`,
+          location_lat: updated.lat,
+          location_lng: updated.lng,
+          volume_kg: updated.volume,
+          harvested_at: new Date(Date.now() - hours * 3600 * 1000).toISOString(),
+        });
+        toast.success("Perubahan panen berhasil disimpan");
+        await onSaveSuccess?.();
+        onOpenChange(false);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        console.error("Gagal memperbarui panen:", err);
+        toast.error("Gagal memperbarui panen", { description: message });
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     onSave(updated);
     onOpenChange(false);
   };
@@ -616,8 +679,12 @@ export function EditHarvestDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button onClick={submit} className="bg-emerald-600 text-white hover:bg-emerald-700">
-            Simpan Perubahan
+          <Button
+            onClick={submit}
+            disabled={isSubmitting}
+            className="bg-emerald-600 text-white hover:bg-emerald-700"
+          >
+            {isSubmitting ? "Menyimpan..." : "Simpan Perubahan"}
           </Button>
         </DialogFooter>
       </DialogContent>
