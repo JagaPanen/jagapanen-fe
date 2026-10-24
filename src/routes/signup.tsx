@@ -23,11 +23,12 @@ function SignupPage() {
     e.preventDefault();
     setBusy(true);
     try {
+      const trimmedName = fullName.trim();
       await signup({
         email: email.trim(),
         password,
-        full_name: fullName.trim() || undefined,
         organization_name: orgName.trim() || "Organisasi Saya",
+        ...(trimmedName ? { full_name: trimmedName } : {}),
       });
       toast.success("Akun dibuat");
       await navigate({ to: "/app/scenarios" });
@@ -48,8 +49,7 @@ function SignupPage() {
         </Link>
         <h1 className="text-xl font-semibold text-zinc-900">Buat akun organisasi</h1>
         <p className="mt-1 text-sm text-zinc-500">
-          Setelah daftar Anda masuk ke workspace{" "}
-          <code className="text-xs">/app</code>.
+          Setelah daftar Anda masuk ke workspace <code className="text-xs">/app</code>.
         </p>
         <form onSubmit={onSubmit} className="mt-6 space-y-3">
           <div className="space-y-1.5">

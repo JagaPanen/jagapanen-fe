@@ -60,14 +60,20 @@ function ScenariosPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-zinc-900">Skenario perencanaan</h1>
-          <p className="text-sm text-zinc-500">Pilih skenario atau buat baru untuk membuka planner.</p>
+          <p className="text-sm text-zinc-500">
+            Pilih skenario atau buat baru untuk membuka planner.
+          </p>
         </div>
         <Button
           onClick={onCreate}
           disabled={creating}
           className="bg-emerald-700 hover:bg-emerald-800"
         >
-          {creating ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Plus className="mr-1.5 h-4 w-4" />}
+          {creating ? (
+            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+          ) : (
+            <Plus className="mr-1.5 h-4 w-4" />
+          )}
           Skenario baru
         </Button>
       </div>
