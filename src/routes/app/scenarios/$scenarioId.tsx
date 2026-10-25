@@ -15,7 +15,7 @@ export const Route = createFileRoute("/app/scenarios/$scenarioId")({
     const runId = typeof search["runId"] === "string" ? search["runId"] : undefined;
     return runId !== undefined ? { tab, runId } : { tab };
   },
-  head: () => ({ meta: [{ title: "Planner — JagaPanen App" }] }),
+  head: () => ({ meta: [{ title: "Planner — Panenlink App" }] }),
   component: OrgPlannerRoute,
 });
 

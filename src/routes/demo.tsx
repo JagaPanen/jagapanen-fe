@@ -10,7 +10,7 @@ export const Route = createFileRoute("/demo")({
     return { tab };
   },
   head: () => ({
-    meta: [{ title: "JagaPanen Demo" }],
+    meta: [{ title: "Panenlink Demo" }],
   }),
   component: DemoPage,
 });

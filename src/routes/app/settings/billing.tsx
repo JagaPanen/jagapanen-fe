@@ -23,7 +23,7 @@ export const Route = createFileRoute("/app/settings/billing")({
     if (typeof search["checkout"] === "string") out.checkout = search["checkout"];
     return out;
   },
-  head: () => ({ meta: [{ title: "Billing — JagaPanen" }] }),
+  head: () => ({ meta: [{ title: "Billing — Panenlink" }] }),
   component: BillingPage,
 });
 

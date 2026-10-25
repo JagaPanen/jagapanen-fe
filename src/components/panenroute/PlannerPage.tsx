@@ -575,13 +575,16 @@ export function PlannerPage({
       </Dialog>
       <header className="w-full border-b border-slate-200 bg-white">
         <div className="mx-auto flex w-full max-w-[1600px] flex-col justify-between gap-3 px-3.5 py-3 sm:flex-row sm:items-center sm:px-5">
-          <div className="flex items-center gap-2.5">
+          <Link to="/" className="flex items-center gap-2 hover:opacity-90">
             <img
-              src="/logo.png"
-              alt="JagaPanen - Spoilage-Aware Agri-Logistics"
-              className="h-10 w-auto flex-shrink-0 object-contain sm:h-12"
+              src="/favicon.svg"
+              alt="Panenlink"
+              className="h-8 w-auto flex-shrink-0 object-contain sm:h-9"
             />
-          </div>
+            <span className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">
+              Panenlink
+            </span>
+          </Link>
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <Badge
               variant="outline"

@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { Loader2, Plus } from "lucide-react";
 
 export const Route = createFileRoute("/app/scenarios/")({
-  head: () => ({ meta: [{ title: "Skenario — JagaPanen App" }] }),
+  head: () => ({ meta: [{ title: "Skenario — Panenlink App" }] }),
   component: ScenariosPage,
 });
 

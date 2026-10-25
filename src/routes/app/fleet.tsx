@@ -8,7 +8,7 @@ import { createVehicle, getVehicles, updateVehicle, type Vehicle } from "@/servi
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/fleet")({
-  head: () => ({ meta: [{ title: "Armada — JagaPanen App" }] }),
+  head: () => ({ meta: [{ title: "Armada — Panenlink App" }] }),
   component: FleetPage,
 });
 

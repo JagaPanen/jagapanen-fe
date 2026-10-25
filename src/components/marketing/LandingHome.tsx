@@ -57,8 +57,8 @@ const FAQ = [
     a: "Guest memakai data contoh terisolasi dengan batas 5 run. Akun org punya workspace sendiri, skenario tersimpan, dan nanti ekspor laporan.",
   },
   {
-    q: "Apakah JagaPanen mengganti GPS / TMS kami?",
-    a: "Tidak. JagaPanen adalah decision-support spoilage-aware di atas data panen dan armada yang Anda sudah punya.",
+    q: "Apakah Panenlink mengganti GPS / TMS kami?",
+    a: "Tidak. Panenlink adalah decision-support spoilage-aware di atas data panen dan armada yang Anda sudah punya.",
   },
   {
     q: "Bagaimana skor risiko dihitung?",
@@ -79,13 +79,13 @@ export function LandingPage() {
     <div className="jp-landing min-h-screen text-(--jp-ink)">
       <header className="absolute inset-x-0 top-0 z-20">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-          <Link to="/" className="flex items-center gap-2">
-            <img src="/logo.png" alt="" className="h-9 w-auto object-contain sm:h-10" />
+          <Link to="/" className="flex items-center gap-2.5">
+            <img src="/favicon.svg" alt="Panenlink" className="h-8 w-auto object-contain sm:h-9" />
             <span
               className="text-xl font-semibold tracking-tight text-white drop-shadow-sm sm:text-2xl"
               style={display}
             >
-              JagaPanen
+              Panenlink
             </span>
           </Link>
           <nav className="flex items-center gap-2 sm:gap-3">
@@ -118,7 +118,7 @@ export function LandingPage() {
             className="text-5xl font-semibold leading-[0.95] tracking-tight text-white sm:text-7xl md:text-8xl"
             style={display}
           >
-            JagaPanen
+            Panenlink
           </p>
           <h1 className="mt-5 max-w-xl text-lg font-medium leading-snug text-emerald-50/95 sm:text-2xl">
             Jangan kirim rute terdekat dulu — kirim rute yang melindungi nilai panen mudah rusak.
@@ -418,7 +418,7 @@ export function LandingPage() {
       </section>
 
       <footer className="border-t border-(--jp-line) bg-(--jp-paper) px-4 py-8 text-center text-xs text-(--jp-muted) sm:px-6">
-        {new Date().getFullYear()} JagaPanen · Spoilage-aware agri-logistics
+        {new Date().getFullYear()} Panenlink · Spoilage-aware agri-logistics
       </footer>
     </div>
   );

@@ -78,20 +78,20 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1.0" },
-      { title: "JagaPanen" },
+      { title: "Panenlink" },
       {
         name: "description",
-        content: "JagaPanen — Post-Harvest Logistics Orchestration and Decision Intelligence",
+        content: "Panenlink — Post-Harvest Logistics Orchestration and Decision Intelligence",
       },
-      { name: "author", content: "JagaPanen" },
-      { property: "og:title", content: "JagaPanen" },
+      { name: "author", content: "Panenlink" },
+      { property: "og:title", content: "Panenlink" },
       {
         property: "og:description",
-        content: "JagaPanen — Post-Harvest Logistics Orchestration and Decision Intelligence",
+        content: "Panenlink — Post-Harvest Logistics Orchestration and Decision Intelligence",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
-      { name: "twitter:site", content: "@JagaPanen" },
+      { name: "twitter:site", content: "@Panenlink" },
     ],
     links: [
       {

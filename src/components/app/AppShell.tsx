@@ -48,8 +48,9 @@ export function AppShell() {
         <div className="mx-auto flex w-full max-w-[1600px] flex-wrap items-center justify-between gap-3 px-3.5 py-3 sm:px-5">
           <div className="flex items-center gap-6">
             <Link to="/app/scenarios" className="flex items-center gap-2">
-              <img src="/logo.png" alt="JagaPanen" className="h-8 w-auto" />
-              <span className="text-sm font-semibold text-zinc-800">App</span>
+              <img src="/favicon.svg" alt="Panenlink" className="h-7 w-auto object-contain" />
+              <span className="text-sm font-semibold text-zinc-800">Panenlink</span>
+              <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[11px] font-medium text-slate-600">App</span>
             </Link>
             <nav className="flex items-center gap-1">
               {NAV.map((item) => {
