@@ -1,4 +1,4 @@
-# JagaPanen
+# Panenlink
 
 Single-page decision-support app for an agricultural cooperative. It plans pickup order from ready-to-ship harvests so perishable crops are collected before they spoil. The comparison is a shortest-path baseline against a spoilage-aware route. The score is deterministic: hours since harvest, transit time, shelf life, and a handling factor. There is no yield forecast or weather model.
 
@@ -11,11 +11,11 @@ Single-page decision-support app for an agricultural cooperative. It plans picku
 
 ## What the screen does
 
-The header shows the JagaPanen logo, the pilot badge **Koperasi Tani Maju Bersama**, and a connection badge. **Backend Active** appears when `GET /api/commodities` and `GET /api/vehicles` both succeed. Otherwise the badge reads **Standalone Demo** and the comparison uses the client-side fallback.
+The header shows the Panenlink logo, the pilot badge **Koperasi Tani Maju Bersama**, and a connection badge. **Backend Active** appears when `GET /api/commodities` and `GET /api/vehicles` both succeed. Otherwise the badge reads **Standalone Demo** and the comparison uses the client-side fallback.
 
 The sticky bar has two views:
 
-- **Komparasi Skenario** shows four impact cards (food loss avoided, economic loss avoided, extra fuel cost, net retained margin) and two route cards: **Rute Konvensional (Baseline)** and **Rute JagaPanen (Spoilage-Aware)**.
+- **Komparasi Skenario** shows four impact cards (food loss avoided, economic loss avoided, extra fuel cost, net retained margin) and two route cards: **Rute Konvensional (Baseline)** and **Rute Panenlink (Spoilage-Aware)**.
 - **Peta Penjemputan** draws the pool, harvest points, and destination on a Leaflet map.
 
 **Kalkulasi Ulang Rute** posts the current table to `POST /api/scenarios/run-dynamic` with `mode: "spoilage_priority"`. The button stays disabled while a run is in progress or while total volume is over the vehicle capacity.

@@ -83,7 +83,7 @@ export async function apiJson<T>(path: string, init?: ApiJsonOptions): Promise<T
     if (!res.ok) {
       const detail = parseApiDetail(body, `HTTP ${res.status}`);
       const message = `HTTP ${res.status} ${method} ${url} — ${detail}`;
-      console.error("[JagaPanen API]", message);
+      console.error("[Panenlink API]", message);
       throw new ApiError(res.status, detail);
     }
 
@@ -94,7 +94,7 @@ export async function apiJson<T>(path: string, init?: ApiJsonOptions): Promise<T
     const contentType = res.headers.get("content-type") ?? "";
     if (!contentType.includes("json")) {
       const message = `Non-JSON ${res.status} ${method} ${url} (${contentType || "no content-type"}) — ${body.slice(0, 180)}`;
-      console.error("[JagaPanen API]", message);
+      console.error("[Panenlink API]", message);
       throw new Error(message);
     }
 
@@ -102,7 +102,7 @@ export async function apiJson<T>(path: string, init?: ApiJsonOptions): Promise<T
       return JSON.parse(body) as T;
     } catch {
       const message = `Invalid JSON ${method} ${url} — ${body.slice(0, 180)}`;
-      console.error("[JagaPanen API]", message);
+      console.error("[Panenlink API]", message);
       throw new Error(message);
     }
   } catch (err) {
@@ -115,7 +115,7 @@ export async function apiJson<T>(path: string, init?: ApiJsonOptions): Promise<T
     const message = timedOut
       ? `Timeout ${API_TIMEOUT_MS}ms ${method} ${url}`
       : `Network error ${method} ${url}: ${reason}. Often a CORS block or the host is unreachable. API base is ${API_BASE_URL}.`;
-    console.error("[JagaPanen API]", message, err);
+    console.error("[Panenlink API]", message, err);
     throw new Error(message);
   } finally {
     clearTimeout(timeoutId);
@@ -427,7 +427,7 @@ export const DEMO_FALLBACK_COMPARISON: ComparisonData = {
     ],
   },
   jagaPanen: {
-    mode: "JagaPanen (Spoilage-Aware)",
+    mode: "Panenlink (Spoilage-Aware)",
     vehicle_used: "Mitsubishi L300 (1.000 kg)",
     total_distance_km: 47.8,
     total_duration_minutes: 96,
@@ -502,7 +502,7 @@ export const EMPTY_COMPARISON: ComparisonData = {
     stops: [],
   },
   jagaPanen: {
-    mode: "JagaPanen (Spoilage-Aware)",
+    mode: "Panenlink (Spoilage-Aware)",
     vehicle_used: "Pick-up Colt L300 (1.000 kg)",
     total_distance_km: 0,
     total_duration_minutes: 0,
@@ -534,7 +534,7 @@ export async function getCommodities(): Promise<Commodity[]> {
     const data = await apiJson<Commodity[]>("/commodities?active_only=true");
     return data && data.length > 0 ? data : FALLBACK_COMMODITIES;
   } catch (err) {
-    console.error("[JagaPanen API] Commodity catalog failed, using offline fallback:", err);
+    console.error("[Panenlink API] Commodity catalog failed, using offline fallback:", err);
     return FALLBACK_COMMODITIES;
   }
 }
@@ -612,12 +612,12 @@ export async function probeBackend(): Promise<{ commodities: Commodity[]; vehicl
 
   if (!Array.isArray(commodities) || commodities.length === 0) {
     const message = `GET ${apiUrl("/commodities")} returned no commodity rows`;
-    console.error("[JagaPanen API]", message, commodities);
+    console.error("[Panenlink API]", message, commodities);
     throw new Error(message);
   }
   if (!Array.isArray(vehicles) || vehicles.length === 0) {
     const message = `GET ${apiUrl("/vehicles")} returned no vehicles`;
-    console.error("[JagaPanen API]", message, vehicles);
+    console.error("[Panenlink API]", message, vehicles);
     throw new Error(message);
   }
 
@@ -675,7 +675,7 @@ export async function getScenarios(): Promise<Scenario[]> {
 }
 
 export async function createScenario(
-  name = "JagaPanen Live",
+  name = "Panenlink Live",
   optimizationMode: "cost_priority" | "balanced" | "spoilage_priority" = "spoilage_priority",
 ): Promise<Scenario> {
   return apiJson<Scenario>("/scenarios", {
@@ -700,7 +700,7 @@ export async function getHarvests(scenarioId: string): Promise<BackendHarvest[]>
   try {
     return await apiJson<BackendHarvest[]>(`/scenarios/${scenarioId}/harvests`);
   } catch (err) {
-    console.error(`[JagaPanen API] Harvest list failed for scenario ${scenarioId}:`, err);
+    console.error(`[Panenlink API] Harvest list failed for scenario ${scenarioId}:`, err);
     return [];
   }
 }
@@ -1061,7 +1061,7 @@ export async function downloadOptimizationReport(
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `jagapanen-run-${runId}.${format}`;
+  a.download = `panenlink-run-${runId}.${format}`;
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -1106,7 +1106,7 @@ export function mapOptimizationResponse(
   );
   const jagaPanen = routeToOptimizationResult(
     res.spoilage_aware_route,
-    "JagaPanen (Spoilage-Aware)",
+    "Panenlink (Spoilage-Aware)",
     harvestLookup,
     {
       food_loss_avoided_kg: Number(res.estimated_food_loss_avoided_kg) || 0,
@@ -1429,7 +1429,7 @@ export function calculateClientOptimization(payload: ClientOptimizationPayload):
       explainability_reasons: baseReasons,
     },
     jagaPanen: {
-      mode: "JagaPanen (Spoilage-Aware)",
+      mode: "Panenlink (Spoilage-Aware)",
       vehicle_used: vehicleName,
       total_distance_km: jagaTotalDistance,
       total_duration_minutes: jagaTotalDurationMinutes,

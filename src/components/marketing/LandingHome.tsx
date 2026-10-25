@@ -284,7 +284,7 @@ export function LandingPage() {
               className="mt-5 text-5xl font-semibold leading-[0.95] tracking-tight text-white sm:text-6xl md:text-7xl"
               style={display}
             >
-              JagaPanen
+              Panenlink
             </p>
 
             <h1 className="mt-4 max-w-xl text-lg font-medium leading-snug text-emerald-50/95 sm:text-2xl">

@@ -1,6 +1,6 @@
-# JagaPanen Design System Standard (DESIGN.md)
+# Panenlink Design System Standard (DESIGN.md)
 
-Design system and visual guidelines for **JagaPanen** (Agri-Logistics & Post-Harvest Decision Intelligence). Based on modern clean utility-first patterns (`getdesign.md` & `awesome-design-md`).
+Design system and visual guidelines for **Panenlink** (Agri-Logistics & Post-Harvest Decision Intelligence). Based on modern clean utility-first patterns (`getdesign.md` & `awesome-design-md`).
 
 ---
 

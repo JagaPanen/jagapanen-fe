@@ -443,7 +443,7 @@ function calculateOptimization(payload) {
       explainability_reasons: baseReasons,
     },
     jagaPanen: {
-      mode: "JagaPanen (Spoilage-Aware)",
+      mode: "Panenlink (Spoilage-Aware)",
       vehicle_used: vehicleName,
       total_distance_km: jagaTotalDistance,
       total_duration_minutes: jagaTotalDurationMinutes,

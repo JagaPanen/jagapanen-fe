@@ -24,7 +24,7 @@ const REMOTE_API_BASE = remoteApiBase(
 );
 const REMOTE_ORIGIN = new URL(REMOTE_API_BASE).origin;
 
-// Proxy handler untuk meneruskan /api/** ke server VPS backend Jagapanen
+// Proxy handler untuk meneruskan /api/** ke server VPS backend Panenlink
 async function handleApiProxy(request: Request, url: URL): Promise<Response> {
   // 1. Tangani CORS preflight (OPTIONS)
   if (request.method.toUpperCase() === "OPTIONS") {

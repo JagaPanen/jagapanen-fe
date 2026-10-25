@@ -127,7 +127,7 @@ export function PlannerPage({
       if (s.name) setScenarioName(s.name);
       return s;
     } catch (err) {
-      console.error("[JagaPanen] Scenario status load failed:", err);
+      console.error("[Panenlink] Scenario status load failed:", err);
       return null;
     }
   }, []);
@@ -179,7 +179,7 @@ export function PlannerPage({
         await refreshScenarioStatus(activeScenarioId);
         return mapped;
       } catch (err) {
-        console.error("[JagaPanen] Harvest load failed:", err);
+        console.error("[Panenlink] Harvest load failed:", err);
         setComparisonData(EMPTY_COMPARISON);
         return null;
       } finally {
@@ -230,7 +230,7 @@ export function PlannerPage({
       } catch (err) {
         if (cancelled) return;
         const message = err instanceof Error ? err.message : String(err);
-        console.error("[JagaPanen] Backend check failed. API base:", API_BASE_URL, err);
+        console.error("[Panenlink] Backend check failed. API base:", API_BASE_URL, err);
         setBackendError(message);
         setIsBackendConnected(false);
         if (!isOrgMode) setScenarioId(null);
@@ -448,7 +448,7 @@ export function PlannerPage({
       toast.success("Rute berhasil dihitung — komparasi & peta siap");
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
-      console.error("[JagaPanen] Optimasi gagal:", e);
+      console.error("[Panenlink] Optimasi gagal:", e);
       setComparisonData(EMPTY_COMPARISON);
       await refreshScenarioStatus(scenarioId);
       toast.error("Optimasi gagal", { description: message });

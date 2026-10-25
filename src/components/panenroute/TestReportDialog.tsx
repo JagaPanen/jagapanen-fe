@@ -94,7 +94,7 @@ export function TestReportDialog() {
                     <td className="p-2.5 text-emerald-700 font-medium">✓ Lolos (Biaya Terendah)</td>
                   </tr>
                   <tr>
-                    <td className="p-2.5 font-medium text-zinc-800">JagaPanen Wins</td>
+                    <td className="p-2.5 font-medium text-zinc-800">Panenlink Wins</td>
                     <td className="p-2.5">15 Kasus</td>
                     <td className="p-2.5 text-zinc-600">
                       Komoditas rentan (Tomat, Stroberi, Bayam, Cabai Rawit)

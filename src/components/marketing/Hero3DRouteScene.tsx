@@ -613,7 +613,7 @@ export default function Hero3DRouteScene({
       {splineSceneUrl ? (
         <iframe
           src={splineSceneUrl}
-          title="Peta Rute 3D JagaPanen"
+          title="Peta Rute 3D Panenlink"
           className="h-full w-full border-0"
           loading="lazy"
         />
