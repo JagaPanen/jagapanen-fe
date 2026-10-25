@@ -7,7 +7,7 @@ import { login } from "@/services/api";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/login")({
-  head: () => ({ meta: [{ title: "Masuk — JagaPanen" }] }),
+  head: () => ({ meta: [{ title: "Masuk — Panenlink" }] }),
   component: LoginPage,
 });
 
@@ -37,7 +37,8 @@ function LoginPage() {
     <div className="flex min-h-[100dvh] items-center justify-center bg-slate-50 px-4 py-10">
       <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
         <Link to="/" className="mb-4 inline-flex items-center gap-2">
-          <img src="/logo.png" alt="JagaPanen" className="h-8 w-auto" />
+          <img src="/favicon.svg" alt="Panenlink" className="h-8 w-auto" />
+          <span className="text-xl font-bold tracking-tight text-slate-900">Panenlink</span>
         </Link>
         <h1 className="text-xl font-semibold text-zinc-900">Masuk ke workspace</h1>
         <p className="mt-1 text-sm text-zinc-500">Gunakan akun organisasi (bukan guest demo).</p>

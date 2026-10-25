@@ -10,7 +10,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/history")({
-  head: () => ({ meta: [{ title: "Riwayat run — JagaPanen" }] }),
+  head: () => ({ meta: [{ title: "Riwayat run — Panenlink" }] }),
   component: HistoryPage,
 });
 

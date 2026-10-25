@@ -219,7 +219,7 @@ export function ComparisonView({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-emerald-100">
             <div>
               <h3 className="text-sm font-bold text-emerald-950">
-                Rute JagaPanen (Spoilage-Aware)
+                Rute Panenlink (Spoilage-Aware)
               </h3>
               <p className="text-[11px] text-emerald-700">
                 Objektif: Biaya + Detour + Proteksi Mutu

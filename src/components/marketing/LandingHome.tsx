@@ -110,8 +110,8 @@ const FAQ = [
     a: "Guest memakai data contoh terisolasi dengan batas 5 run. Akun org punya workspace sendiri, skenario tersimpan, dan nanti ekspor laporan.",
   },
   {
-    q: "Apakah JagaPanen mengganti GPS / TMS kami?",
-    a: "Tidak. JagaPanen adalah decision-support spoilage-aware di atas data panen dan armada yang Anda sudah punya.",
+    q: "Apakah Panenlink mengganti GPS / TMS kami?",
+    a: "Tidak. Panenlink adalah decision-support spoilage-aware di atas data panen dan armada yang Anda sudah punya.",
   },
   {
     q: "Bagaimana skor risiko dihitung?",
@@ -237,7 +237,7 @@ export function LandingPage() {
               className="text-xl font-semibold tracking-tight text-white drop-shadow-sm sm:text-2xl"
               style={display}
             >
-              JagaPanen
+              Panenlink
             </span>
           </Link>
           <nav className="flex items-center gap-2 sm:gap-3">
@@ -790,7 +790,7 @@ export function LandingPage() {
       </section>
 
       <footer className="border-t border-(--jp-line) bg-(--jp-paper) px-4 py-8 text-center text-xs text-(--jp-muted) sm:px-6">
-        {new Date().getFullYear()} JagaPanen · Spoilage-aware agri-logistics
+        {new Date().getFullYear()} Panenlink · Spoilage-aware agri-logistics
       </footer>
     </div>
   );

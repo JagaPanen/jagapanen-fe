@@ -20,7 +20,7 @@ import {
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/app/catalog")({
-  head: () => ({ meta: [{ title: "Katalog — JagaPanen App" }] }),
+  head: () => ({ meta: [{ title: "Katalog — Panenlink App" }] }),
   component: CatalogPage,
 });
 
