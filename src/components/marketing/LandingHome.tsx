@@ -25,38 +25,41 @@ const LazyHero3DRouteScene = lazy(() => import("./Hero3DRouteScene"));
 
 const PREVIEW_STEPS = [
   {
-    title: "Hitung risiko A-E",
-    detail: "Kalkulasi indeks kerentanan tomat, cabai, dan sayur daun dari jam panen.",
-    metric: "Skor Risiko Real-Time",
+    title: "Hitung risiko kelas A–E",
+    detail:
+      "Panenlink menilai seberapa cepat mutu turun dari jam sejak panen — misalnya tomat, cabai, dan sayur daun.",
+    metric: "Skor risiko",
   },
   {
-    title: "Preview truk feasible",
-    detail: "Filter kapasitas & batas tempuh armada yang sanggup mengejar jendela kesegaran.",
-    metric: "Kesesuaian Armada",
+    title: "Cek truk yang layak",
+    detail:
+      "Sistem menyaring armada yang kapasitas dan waktu tempuhnya masih cocok dengan jendela kesegaran panen.",
+    metric: "Kelayakan armada",
   },
   {
-    title: "Bandingkan baseline vs spoilage",
-    detail: "Lihat komparasi nilai panen terselamatkan sebelum memberangkatkan pengantar.",
-    metric: "Keputusan Berbasis Bukti",
+    title: "Bandingkan dua rute",
+    detail:
+      "Lihat perbedaan rute jarak terpendek versus rute yang melindungi mutu sebelum pengantar berangkat.",
+    metric: "Keputusan jelas",
   },
 ];
 
 const HOW_STEPS = [
   {
-    title: "Input panen hari ini",
-    desc: "Catat komoditas, tonase, dan waktu petik dari kelompok tani atau titik kumpul.",
+    title: "Catat panen hari ini",
+    desc: "Masukkan komoditas, tonase, dan waktu petik dari titik kumpul koperasi Anda.",
   },
   {
-    title: "Skor spoilage API",
-    desc: "Mesin rule-based mengevaluasi kelas A-E, suhu lapangan, dan sisa umur simpan.",
+    title: "Hitung skor spoilage",
+    desc: "Panenlink menilai kelas kerentanan A–E, jam sejak panen, dan sisa umur simpan.",
   },
   {
-    title: "Pilih truk feasible",
-    desc: "Cocokkan lot prioritas dengan kendaraan aktif yang memenuhi jendela waktu.",
+    title: "Pilih truk yang layak",
+    desc: "Cocokkan lot prioritas dengan kendaraan aktif yang masih memenuhi jendela waktu.",
   },
   {
-    title: "Komparasi dan jalankan",
-    desc: "Bandingkan rute jarak-terpendek vs spoilage-aware lalu kunci perjalanan.",
+    title: "Bandingkan dan jalankan",
+    desc: "Pilih rute yang lebih baik untuk mutu panen, lalu kunci perjalanan untuk pengantar.",
   },
 ];
 
@@ -64,42 +67,38 @@ const PRICING = [
   {
     name: "Guest",
     price: "Gratis",
-    blurb: "Coba planner asli, 5 run optimasi, data contoh terisolasi.",
+    blurb: "Coba planner asli dengan data contoh, terbatas 5 kali optimasi.",
     demo: true,
     label: "Coba demo",
     highlight: false,
-    features: [
-      "5x Run Optimasi Rute",
-      "Dataset Hortikultura Contoh",
-      "Komparasi Baseline vs Spoilage",
-    ],
+    features: ["5 kali optimasi rute", "Data hortikultura contoh", "Komparasi dua skenario rute"],
   },
   {
     name: "Basic",
     price: "Gratis",
-    blurb: "Workspace org · 50 run optimasi / bulan · skenario tersimpan.",
+    blurb: "Workspace organisasi, 50 optimasi per bulan, dan skenario tersimpan.",
     demo: false,
     plan: "basic" as const,
     label: "Daftar Basic",
     highlight: true,
     features: [
-      "Workspace Organisasi Mandiri",
-      "50x Run Optimasi / Bulan",
-      "Simpan Skenario & Armada",
+      "Workspace organisasi sendiri",
+      "50 optimasi per bulan",
+      "Simpan skenario dan armada",
     ],
   },
   {
     name: "Pro",
     price: "IDR 49rb/bln",
-    blurb: "2.000 run / bulan · full dashboard · prioritas dukungan.",
+    blurb: "2.000 optimasi per bulan, dashboard lengkap, dan dukungan prioritas.",
     demo: false,
     plan: "pro" as const,
     label: "Daftar → Pro",
     highlight: false,
     features: [
-      "2.000x Run Optimasi / Bulan",
-      "Multi-Operator & Audit Log",
-      "Dukungan Integrasi Prioritas",
+      "2.000 optimasi per bulan",
+      "Multi-operator dan log audit",
+      "Dukungan integrasi prioritas",
     ],
   },
 ];
@@ -107,19 +106,19 @@ const PRICING = [
 const FAQ = [
   {
     q: "Apa bedanya demo guest dengan akun organisasi?",
-    a: "Guest memakai data contoh terisolasi dengan batas 5 run. Akun org punya workspace sendiri, skenario tersimpan, dan nanti ekspor laporan.",
+    a: "Demo guest memakai data contoh terisolasi dengan batas 5 kali optimasi. Akun organisasi punya workspace sendiri, skenario tersimpan, dan akses ekspor laporan.",
   },
   {
     q: "Apakah Panenlink mengganti GPS / TMS kami?",
-    a: "Tidak. Panenlink adalah decision-support spoilage-aware di atas data panen dan armada yang Anda sudah punya.",
+    a: "Tidak. Panenlink melengkapi data panen dan armada yang sudah Anda punya. Fokusnya membantu memilih rute yang melindungi mutu, bukan mengganti pelacakan armada.",
   },
   {
     q: "Bagaimana skor risiko dihitung?",
-    a: "Rule-based dari kelas perishability A-E, jam sejak panen, handling factor, dan shelf life — bukan ML black-box.",
+    a: "Saat ini dari kelas kerentanan A–E, jam sejak panen, faktor penanganan, dan sisa umur simpan — hasilnya transparan dan bisa diaudit. Ke depan, machine learning akan memperkuat deteksi pola defisit dan surplus panen.",
   },
   {
     q: "Apakah butuh dataset nasional?",
-    a: "Tidak. Cukup input panen hari ini dan daftar kendaraan aktif koperasi Anda.",
+    a: "Untuk mulai, tidak. Cukup input panen hari ini dan daftar kendaraan aktif koperasi Anda. Nanti Panenlink memakai dataset untuk mendeteksi defisit dan surplus, agar pengiriman mengikuti permintaan dan pasokan — bukan hanya menunggu lot siap berangkat.",
   },
 ];
 
@@ -277,7 +276,7 @@ export function LandingPage() {
           <div className="relative z-10 lg:col-span-6">
             <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-950/60 px-3.5 py-1.5 text-xs font-medium text-emerald-200 shadow-sm backdrop-blur-md">
               <Sparkles className="h-3.5 w-3.5 text-(--jp-sun)" />
-              <span>Spoilage-Aware Agricultural Logistics Engine</span>
+              <span>Rute yang melindungi mutu panen</span>
             </div>
 
             <p
@@ -288,12 +287,12 @@ export function LandingPage() {
             </p>
 
             <h1 className="mt-4 max-w-xl text-lg font-medium leading-snug text-emerald-50/95 sm:text-2xl">
-              Jangan kirim rute terdekat dulu — kirim rute yang melindungi nilai panen mudah rusak.
+              Jangan kirim rute terdekat dulu — kirim rute yang melindungi panen mudah rusak.
             </h1>
 
             <p className="mt-3 max-w-lg text-sm leading-relaxed text-emerald-100/75 sm:text-base">
-              Decision-support spoilage-aware untuk koperasi dan armada kolektor. Memadukan sisa
-              umur simpan Kelas A–E, kelayakan armada, dan topografi rute secara real-time.
+              Decision support untuk koperasi dan armada kolektor: skor umur simpan kelas A–E, cek
+              kelayakan truk, lalu bandingkan rute biasa dengan rute yang menjaga nilai panen.
             </p>
 
             {/* Primary & Secondary CTAs */}
@@ -378,12 +377,12 @@ export function LandingPage() {
               <div className="flex items-center gap-2.5">
                 <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
                 <span className="font-semibold tracking-wide text-white">
-                  /demo · Guest Demo — Preview Planner Interaktif
+                  /demo · Preview planner
                 </span>
               </div>
               <div className="flex items-center gap-2 text-[11px] text-emerald-200/80">
                 <Compass className="h-3.5 w-3.5 text-(--jp-sun)" />
-                <span>Sinkron dengan simulasi 3D di atas</span>
+                <span>Sinkron dengan peta rute 3D</span>
               </div>
             </div>
 
@@ -397,7 +396,8 @@ export function LandingPage() {
                     Preview planner
                   </h2>
                   <p className="mt-1.5 max-w-2xl text-sm text-(--jp-muted) sm:text-base">
-                    Alur yang sama dengan demo: panen, skor risiko, kelayakan armada, optimasi.
+                    Alur yang sama dengan demo: catat panen, hitung skor risiko, cek truk yang
+                    layak, lalu optimasi rute.
                   </p>
                 </div>
                 <Link
@@ -405,7 +405,7 @@ export function LandingPage() {
                   search={{ tab: "comparison" }}
                   className="inline-flex items-center gap-1.5 text-sm font-semibold text-(--jp-leaf) hover:text-(--jp-leaf-deep)"
                 >
-                  Buka workspace simulasi penuh <ArrowRight className="h-4 w-4" />
+                  Buka demo penuh <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
 
@@ -444,13 +444,14 @@ export function LandingPage() {
         <div className="mx-auto max-w-6xl">
           <div className="inline-flex items-center gap-2 rounded-full bg-emerald-950/8 px-3 py-1 text-xs font-semibold text-(--jp-leaf-deep)">
             <Layers className="h-3.5 w-3.5" />
-            <span>Mengapa Rute Standar Gagal</span>
+            <span>Mengapa rute biasa sering gagal</span>
           </div>
           <h2 className="mt-3 text-3xl font-semibold sm:text-4xl" style={display}>
             Masalah di lapangan
           </h2>
           <p className="mt-2 max-w-2xl text-(--jp-muted)">
-            Rute terpendek sering mengorbankan kelas A/B — kerugian diam-diam di bak truk.
+            Rute terpendek sering mengorbankan panen kelas A dan B — susut diam-diam di bak truk
+            sebelum sampai pasar.
           </p>
           <ul className="mt-8 grid gap-5 sm:grid-cols-3">
             <li className="jp-floating-tile rounded-2xl border border-white/80 bg-white/90 p-6 shadow-[0_18px_40px_-24px_rgba(15,42,28,0.22)] ring-1 ring-(--jp-line) backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1">
@@ -459,16 +460,16 @@ export function LandingPage() {
               </div>
               <p className="mt-4 text-lg font-semibold">Panen rentan</p>
               <p className="mt-1.5 text-sm leading-relaxed text-(--jp-muted)">
-                Tomat dan daun hijau kehabisan jendela kualitas sebelum sampai pasar.
+                Tomat dan sayur daun cepat kehilangan kualitas jika menunggu terlalu lama di rute.
               </p>
             </li>
             <li className="jp-floating-tile rounded-2xl border border-white/80 bg-white/90 p-6 shadow-[0_18px_40px_-24px_rgba(15,42,28,0.22)] ring-1 ring-(--jp-line) backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1">
               <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-950/10 text-(--jp-leaf)">
                 <Route className="h-5 w-5" />
               </div>
-              <p className="mt-4 text-lg font-semibold">Rute bukan selalu terbaik</p>
+              <p className="mt-4 text-lg font-semibold">Jarak bukan selalu terbaik</p>
               <p className="mt-1.5 text-sm leading-relaxed text-(--jp-muted)">
-                Dispatcher mengutamakan km, bukan sisa shelf life.
+                Dispatcher sering mengutamakan kilometer, bukan sisa umur simpan di bak truk.
               </p>
             </li>
             <li className="jp-floating-tile rounded-2xl border border-white/80 bg-white/90 p-6 shadow-[0_18px_40px_-24px_rgba(15,42,28,0.22)] ring-1 ring-(--jp-line) backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1">
@@ -477,7 +478,7 @@ export function LandingPage() {
               </div>
               <p className="mt-4 text-lg font-semibold">Sulit dibuktikan</p>
               <p className="mt-1.5 text-sm leading-relaxed text-(--jp-muted)">
-                Tanpa komparasi baseline vs spoilage-aware, keputusan sulit dipertanggungjawabkan.
+                Tanpa membandingkan dua skenario rute, keputusan sulit dijelaskan ke pengelola.
               </p>
             </li>
           </ul>
@@ -491,7 +492,7 @@ export function LandingPage() {
             Cara kerja
           </h2>
           <p className="mt-2 max-w-2xl text-(--jp-muted)">
-            Empat langkah terstruktur dari pencatatan panen hingga eksekusi rute pengantar.
+            Empat langkah dari pencatatan panen sampai kunci perjalanan untuk pengantar.
           </p>
           <ol className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
             {HOW_STEPS.map((step, i) => (
@@ -519,11 +520,11 @@ export function LandingPage() {
           <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
             <div>
               <h2 className="text-3xl font-semibold sm:text-4xl" style={display}>
-                Teaser rute
+                Bandingkan rute
               </h2>
               <p className="mt-2 max-w-xl text-emerald-100/75">
-                Alihkan antara baseline jarak-pendek dan spoilage-aware sebelum membuka demo penuh.
-                Pilihan Anda juga mengubah simulasi 3D di atas.
+                Alihkan antara rute jarak terpendek dan rute yang melindungi mutu. Pilihan ini juga
+                mengubah peta rute 3D di atas.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
@@ -600,8 +601,8 @@ export function LandingPage() {
                   fontWeight="600"
                 >
                   {spoilageAware
-                    ? "Detour kecil · risiko spoilage turun · lot Kelas A diselamatkan lebih dulu"
-                    : "Lurus · kelas A menunggu lebih lama · susut mutu meningkat di bak truk"}
+                    ? "Detour kecil · risiko spoilage turun · lot Kelas A dijemput lebih dulu"
+                    : "Rute lurus · Kelas A menunggu lebih lama · susut mutu naik di bak truk"}
                 </text>
               </svg>
             </div>
@@ -609,15 +610,15 @@ export function LandingPage() {
             <div className="flex flex-col justify-between rounded-2xl border border-white/12 bg-white/6 p-5 backdrop-blur-md lg:col-span-4">
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">
-                  Ringkasan Dampak Rute
+                  Dampak rute
                 </p>
                 <p className="mt-2 text-2xl font-semibold text-white" style={display}>
-                  {spoilageAware ? "Prioritas Ketahanan Mutu" : "Prioritas Jarak Minimum"}
+                  {spoilageAware ? "Prioritas jaga mutu" : "Prioritas jarak terpendek"}
                 </p>
                 <p className="mt-2 text-xs leading-relaxed text-emerald-100/75">
                   {spoilageAware
-                    ? "Mengalihkan truk +6 km melalui Hub Cold-Box Pujon menjaga suhu tomat Kelas A tetap di bawah ambang susut."
-                    : "Memotong jalur langsung memangkas 6 km jarak tempuh tetapi membuat panen Kelas A terpapar panas lebih lama."}
+                    ? "Tambah sekitar 6 km lewat hub cold-box agar suhu panen Kelas A tetap terjaga."
+                    : "Hemat 6 km jarak, tetapi panen Kelas A lebih lama terpapar panas di perjalanan."}
                 </p>
               </div>
               <div className="mt-5 border-t border-white/10 pt-4">
@@ -626,7 +627,7 @@ export function LandingPage() {
                   search={{ tab: "comparison" }}
                   className="inline-flex items-center gap-1.5 text-xs font-semibold text-(--jp-sun) hover:underline"
                 >
-                  Uji dengan data panen Anda di Demo <ArrowRight className="h-3.5 w-3.5" />
+                  Uji dengan data panen Anda di demo <ArrowRight className="h-3.5 w-3.5" />
                 </Link>
               </div>
             </div>
@@ -638,29 +639,34 @@ export function LandingPage() {
       <section className="border-b border-(--jp-line) bg-(--jp-paper) px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-6xl">
           <h2 className="text-3xl font-semibold sm:text-4xl" style={display}>
-            Bukti arah produk
+            Siap dipakai hari ini, tumbuh dengan data
           </h2>
           <p className="mt-2 max-w-2xl text-(--jp-muted)">
-            Dibangun di atas stack SOW yang sudah live: risk score, feasibility preview, dan
-            komparasi baseline vs spoilage-aware.
+            Fitur inti sudah berjalan: skor risiko panen, cek kelayakan truk, dan bandingkan rute
+            biasa dengan rute yang melindungi mutu. Fondasi ini membuka jalan ke prediksi defisit
+            dan surplus agar pengiriman mengikuti permintaan dan pasokan.
           </p>
           <div className="mt-8 grid gap-5 sm:grid-cols-3">
             <div className="rounded-2xl border border-(--jp-line) bg-white p-6 shadow-[0_14px_32px_-22px_rgba(15,42,28,0.2)]">
-              <p className="text-lg font-semibold text-(--jp-leaf-deep)">Rule-based</p>
+              <p className="text-lg font-semibold text-(--jp-leaf-deep)">
+                Siap menuju Machine Learning
+              </p>
               <p className="mt-1.5 text-sm text-(--jp-muted)">
-                Tanpa ketergantungan ML untuk MVP — transparan dan mudah diaudit pengelola.
+                Hari ini keputusan transparan dan bisa diaudit. Besok, model membantu membaca pola
+                defisit–surplus agar pengiriman mengikuti permintaan dan pasokan.
               </p>
             </div>
             <div className="rounded-2xl border border-(--jp-line) bg-white p-6 shadow-[0_14px_32px_-22px_rgba(15,42,28,0.2)]">
-              <p className="text-lg font-semibold text-(--jp-leaf-deep)">Multi-tenant ready</p>
+              <p className="text-lg font-semibold text-(--jp-leaf-deep)">Workspace terpisah</p>
               <p className="mt-1.5 text-sm text-(--jp-muted)">
-                Org JWT + guest sandbox terpisah untuk simulasi aman tanpa mencampur data.
+                Setiap koperasi punya ruang kerja sendiri. Demo guest tidak bercampur dengan data
+                organisasi.
               </p>
             </div>
             <div className="rounded-2xl border border-(--jp-line) bg-white p-6 shadow-[0_14px_32px_-22px_rgba(15,42,28,0.2)]">
-              <p className="text-lg font-semibold text-(--jp-leaf-deep)">Operator-first</p>
+              <p className="text-lg font-semibold text-(--jp-leaf-deep)">Langsung dari lapangan</p>
               <p className="mt-1.5 text-sm text-(--jp-muted)">
-                Input panen dan armada yang sudah ada tanpa instalasi perangkat keras baru.
+                Cukup catat panen dan armada yang sudah ada. Tidak perlu memasang perangkat baru.
               </p>
             </div>
           </div>
@@ -677,7 +683,7 @@ export function LandingPage() {
             Harga sederhana
           </h2>
           <p className="mt-2 text-(--jp-muted)">
-            Guest demo, lalu Basic atau Pro untuk organisasi.
+            Mulai dari demo guest, lalu pilih Basic atau Pro untuk organisasi.
           </p>
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {PRICING.map((plan) => (
@@ -695,7 +701,7 @@ export function LandingPage() {
                   </p>
                   {plan.highlight && (
                     <span className="rounded-full bg-emerald-950/10 px-2.5 py-0.5 text-[10px] font-semibold text-(--jp-leaf-deep)">
-                      Rekomendasi Koperasi
+                      Cocok untuk koperasi
                     </span>
                   )}
                 </div>
@@ -763,7 +769,7 @@ export function LandingPage() {
             Siap jaga panen hari ini?
           </h2>
           <p className="mt-3 text-emerald-100/75">
-            Mulai dari demo gratis — tanpa kartu kredit, tanpa dataset nasional.
+            Mulai dari demo gratis — tanpa kartu kredit dan tanpa dataset nasional.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
             <Button
