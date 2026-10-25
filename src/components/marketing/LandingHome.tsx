@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import {
@@ -7,29 +7,72 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { ArrowRight, Check, Leaf, Route, Shield } from "lucide-react";
+import {
+  Activity,
+  ArrowRight,
+  Check,
+  Clock,
+  Compass,
+  Layers,
+  Leaf,
+  Route,
+  Shield,
+  Sparkles,
+  Truck,
+} from "lucide-react";
+
+const LazyHero3DRouteScene = lazy(() => import("./Hero3DRouteScene"));
 
 const PREVIEW_STEPS = [
-  "Hitung risiko A-E",
-  "Preview truk feasible",
-  "Bandingkan baseline vs spoilage",
+  {
+    title: "Hitung risiko A-E",
+    detail: "Kalkulasi indeks kerentanan tomat, cabai, dan sayur daun dari jam panen.",
+    metric: "Skor Risiko Real-Time",
+  },
+  {
+    title: "Preview truk feasible",
+    detail: "Filter kapasitas & batas tempuh armada yang sanggup mengejar jendela kesegaran.",
+    metric: "Kesesuaian Armada",
+  },
+  {
+    title: "Bandingkan baseline vs spoilage",
+    detail: "Lihat komparasi nilai panen terselamatkan sebelum memberangkatkan pengantar.",
+    metric: "Keputusan Berbasis Bukti",
+  },
 ];
 
 const HOW_STEPS = [
-  "Input panen hari ini",
-  "Skor spoilage API",
-  "Pilih truk feasible",
-  "Komparasi dan jalankan",
+  {
+    title: "Input panen hari ini",
+    desc: "Catat komoditas, tonase, dan waktu petik dari kelompok tani atau titik kumpul.",
+  },
+  {
+    title: "Skor spoilage API",
+    desc: "Mesin rule-based mengevaluasi kelas A-E, suhu lapangan, dan sisa umur simpan.",
+  },
+  {
+    title: "Pilih truk feasible",
+    desc: "Cocokkan lot prioritas dengan kendaraan aktif yang memenuhi jendela waktu.",
+  },
+  {
+    title: "Komparasi dan jalankan",
+    desc: "Bandingkan rute jarak-terpendek vs spoilage-aware lalu kunci perjalanan.",
+  },
 ];
 
 const PRICING = [
   {
     name: "Guest",
     price: "Gratis",
-    blurb: "Coba planner asli, 5 run optimasi, data contoh.",
+    blurb: "Coba planner asli, 5 run optimasi, data contoh terisolasi.",
     demo: true,
     label: "Coba demo",
     highlight: false,
+    features: [
+      "5x Run Optimasi Rute",
+      "Dataset Hortikultura Contoh",
+      "Komparasi Baseline vs Spoilage",
+    ],
   },
   {
     name: "Basic",
@@ -39,6 +82,11 @@ const PRICING = [
     plan: "basic" as const,
     label: "Daftar Basic",
     highlight: true,
+    features: [
+      "Workspace Organisasi Mandiri",
+      "50x Run Optimasi / Bulan",
+      "Simpan Skenario & Armada",
+    ],
   },
   {
     name: "Pro",
@@ -48,6 +96,11 @@ const PRICING = [
     plan: "pro" as const,
     label: "Daftar → Pro",
     highlight: false,
+    features: [
+      "2.000x Run Optimasi / Bulan",
+      "Multi-Operator & Audit Log",
+      "Dukungan Integrasi Prioritas",
+    ],
   },
 ];
 
@@ -72,14 +125,113 @@ const FAQ = [
 
 const display = { fontFamily: "var(--jp-display)" } as const;
 
+/**
+ * Instant, zero-blocking Isometric SVG Fallback rendered during SSR / initial paint
+ * or when the user's device requests reduced motion / data-saver mode.
+ */
+function Hero3DFallbackPlaceholder({ spoilageAware }: { spoilageAware: boolean }) {
+  return (
+    <div className="relative flex h-full min-h-[380px] w-full flex-col justify-between overflow-hidden rounded-3xl border border-emerald-300/15 bg-[#07150f]/80 p-5 shadow-[0_32px_80px_-24px_rgba(0,0,0,0.65)] backdrop-blur-md sm:min-h-[450px]">
+      <div className="flex items-center justify-between text-xs text-emerald-100/80">
+        <span className="inline-flex items-center gap-2 font-semibold text-white">
+          <span className="h-2 w-2 rounded-full bg-emerald-400" />
+          Peta Rute Topografi 3D
+        </span>
+        <span className="rounded-full bg-white/10 px-2.5 py-0.5 text-[11px]">
+          {spoilageAware ? "Mode Spoilage-Aware" : "Mode Baseline Km"}
+        </span>
+      </div>
+
+      <svg
+        viewBox="0 0 520 300"
+        className="my-auto h-56 w-full"
+        aria-label="Ilustrasi isometrik rute pengiriman panen"
+      >
+        <defs>
+          <linearGradient id="isoGridGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#34d399" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#0f2a1c" stopOpacity="0.05" />
+          </linearGradient>
+        </defs>
+        {/* Isometric platform base */}
+        <polygon
+          points="260,35 480,145 260,255 40,145"
+          fill="url(#isoGridGrad)"
+          stroke="rgba(110,231,183,0.25)"
+          strokeWidth="1.5"
+        />
+        <line x1="150" y1="90" x2="370" y2="200" stroke="rgba(110,231,183,0.12)" strokeWidth="1" />
+        <line x1="370" y1="90" x2="150" y2="200" stroke="rgba(110,231,183,0.12)" strokeWidth="1" />
+        {/* Baseline straight route */}
+        <path
+          d="M 110 135 L 250 190 L 410 150"
+          fill="none"
+          stroke="rgba(148,163,184,0.45)"
+          strokeWidth="2.5"
+          strokeDasharray="6 6"
+        />
+        {/* Spoilage-aware 3D elevated arc */}
+        <path
+          d="M 110 135 C 175 45, 240 60, 275 115 C 320 70, 370 85, 410 150"
+          fill="none"
+          stroke={spoilageAware ? "#34d399" : "#f97316"}
+          strokeWidth="4"
+          strokeLinecap="round"
+        />
+        <circle cx="110" cy="135" r="7" fill="#34d399" />
+        <circle cx="275" cy="115" r="7" fill="#f0d078" />
+        <circle cx="410" cy="150" r="8" fill="#fbbf24" />
+      </svg>
+
+      <div className="rounded-2xl border border-white/10 bg-[#0b2319]/85 p-3 text-xs text-emerald-100/80">
+        Memuat simulasi rute 3D hemat memori · Prioritas kesegaran Kelas A aktif.
+      </div>
+    </div>
+  );
+}
+
 export function LandingPage() {
   const [spoilageAware, setSpoilageAware] = useState(true);
+  const [shouldRender3D, setShouldRender3D] = useState(false);
+
+  // Non-blocking hydration: wait until browser main thread is idle after initial paint,
+  // and respect data-saver / reduced-motion preferences on low-end devices.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const nav = navigator as Navigator & {
+      connection?: { saveData?: boolean };
+    };
+    const saveData = Boolean(nav.connection?.saveData);
+
+    if (prefersReducedMotion || saveData) {
+      return;
+    }
+
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const win = window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (id: number) => void;
+    };
+
+    if (typeof win.requestIdleCallback === "function") {
+      const idleId = win.requestIdleCallback(() => setShouldRender3D(true), { timeout: 600 });
+      return () => win.cancelIdleCallback?.(idleId);
+    } else {
+      timeoutId = setTimeout(() => setShouldRender3D(true), 120);
+      return () => {
+        if (timeoutId) clearTimeout(timeoutId);
+      };
+    }
+  }, []);
 
   return (
-    <div className="jp-landing min-h-screen text-(--jp-ink)">
-      <header className="absolute inset-x-0 top-0 z-20">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-          <Link to="/" className="flex items-center gap-2">
+    <div className="jp-landing min-h-screen bg-(--jp-paper) text-(--jp-ink)">
+      {/* Glassmorphic Floating Top Header */}
+      <header className="fixed inset-x-0 top-0 z-40 border-b border-white/10 bg-[#07150f]/75 backdrop-blur-md transition-colors">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3.5 sm:px-6">
+          <Link to="/" className="flex items-center gap-2.5">
             <img src="/logo.png" alt="" className="h-9 w-auto object-contain sm:h-10" />
             <span
               className="text-xl font-semibold tracking-tight text-white drop-shadow-sm sm:text-2xl"
@@ -93,14 +245,14 @@ export function LandingPage() {
               asChild
               variant="ghost"
               size="sm"
-              className="hidden text-white hover:bg-white/10 hover:text-white sm:inline-flex"
+              className="hidden text-emerald-50/90 hover:bg-white/10 hover:text-white sm:inline-flex"
             >
               <Link to="/login">Masuk</Link>
             </Button>
             <Button
               asChild
               size="sm"
-              className="bg-(--jp-leaf) text-white hover:bg-(--jp-leaf-deep)"
+              className="bg-(--jp-leaf) text-white shadow-sm shadow-black/30 hover:bg-(--jp-leaf-deep)"
             >
               <Link to="/signup">Buat akun</Link>
             </Button>
@@ -108,100 +260,223 @@ export function LandingPage() {
         </div>
       </header>
 
-      <section className="relative isolate flex min-h-[100dvh] flex-col justify-end overflow-hidden pb-16 pt-28 sm:pb-24 sm:pt-32">
+      {/* 3D Interactive Hero Section */}
+      <section className="relative isolate flex min-h-[100dvh] flex-col justify-center overflow-hidden pb-24 pt-24 sm:pb-32 sm:pt-28">
+        {/* Multi-layered atmospheric depth background */}
         <div
-          className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_20%_20%,#1a4d36_0%,transparent_55%),radial-gradient(ellipse_at_80%_60%,#0f2a1c_0%,#07150f_70%)]"
+          className="absolute inset-0 -z-20 bg-[radial-gradient(ellipse_at_18%_18%,#1a4d36_0%,transparent_55%),radial-gradient(ellipse_at_82%_52%,#113826_0%,#07150f_72%)]"
           aria-hidden
         />
-        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-          <p
-            className="text-5xl font-semibold leading-[0.95] tracking-tight text-white sm:text-7xl md:text-8xl"
-            style={display}
-          >
-            JagaPanen
-          </p>
-          <h1 className="mt-5 max-w-xl text-lg font-medium leading-snug text-emerald-50/95 sm:text-2xl">
-            Jangan kirim rute terdekat dulu — kirim rute yang melindungi nilai panen mudah rusak.
-          </h1>
-          <p className="mt-3 max-w-lg text-sm text-emerald-100/75 sm:text-base">
-            Decision-support spoilage-aware untuk koperasi dan armada kolektor.
-          </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Button
-              asChild
-              size="lg"
-              className="bg-(--jp-sun) font-semibold text-(--jp-ink) shadow-lg shadow-black/20 hover:bg-[#e8c56a]"
-            >
-              <Link to="/demo" search={{ tab: "comparison" }}>
-                Coba demo gratis <ArrowRight className="ml-1.5 h-4 w-4" />
-              </Link>
-            </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="border-white/40 bg-white/5 text-white hover:bg-white/15 hover:text-white"
-            >
-              <Link to="/signup">Buat akun</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+        <div
+          className="jp-hero-grid-overlay pointer-events-none absolute inset-0 -z-10 opacity-35"
+          aria-hidden
+        />
 
-      <section className="border-b border-(--jp-line) bg-(--jp-paper) px-4 py-16 sm:px-6 sm:py-20">
-        <div className="mx-auto max-w-6xl">
-          <h2 className="text-3xl font-semibold tracking-tight sm:text-4xl" style={display}>
-            Preview planner
-          </h2>
-          <p className="mt-2 max-w-2xl text-(--jp-muted)">
-            Alur yang sama dengan demo: panen, skor risiko, kelayakan armada, optimasi.
-          </p>
-          <div className="mt-8 overflow-hidden rounded-2xl border border-(--jp-line) bg-white shadow-[0_20px_50px_-28px_rgba(15,42,28,0.45)]">
-            <div className="flex items-center gap-2 border-b border-(--jp-line) bg-[#f3f7f4] px-4 py-2.5 text-[11px] text-(--jp-muted)">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              /demo · Guest Demo
+        <div className="mx-auto grid w-full max-w-6xl items-center gap-10 px-4 sm:px-6 lg:grid-cols-12 lg:gap-8">
+          {/* Left Column: Value Proposition & Interactive Route Controls */}
+          <div className="relative z-10 lg:col-span-6">
+            <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/25 bg-emerald-950/60 px-3.5 py-1.5 text-xs font-medium text-emerald-200 shadow-sm backdrop-blur-md">
+              <Sparkles className="h-3.5 w-3.5 text-(--jp-sun)" />
+              <span>Spoilage-Aware Agricultural Logistics Engine</span>
             </div>
-            <div className="grid gap-0 md:grid-cols-3">
-              {PREVIEW_STEPS.map((step, i) => (
-                <div key={step} className="border-(--jp-line) p-5 md:border-r md:last:border-r-0">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-(--jp-leaf)">
-                    Langkah {i + 1}
-                  </p>
-                  <p className="mt-2 text-sm font-medium text-(--jp-ink)">{step}</p>
+
+            <p
+              className="mt-5 text-5xl font-semibold leading-[0.95] tracking-tight text-white sm:text-6xl md:text-7xl"
+              style={display}
+            >
+              JagaPanen
+            </p>
+
+            <h1 className="mt-4 max-w-xl text-lg font-medium leading-snug text-emerald-50/95 sm:text-2xl">
+              Jangan kirim rute terdekat dulu — kirim rute yang melindungi nilai panen mudah rusak.
+            </h1>
+
+            <p className="mt-3 max-w-lg text-sm leading-relaxed text-emerald-100/75 sm:text-base">
+              Decision-support spoilage-aware untuk koperasi dan armada kolektor. Memadukan sisa
+              umur simpan Kelas A–E, kelayakan armada, dan topografi rute secara real-time.
+            </p>
+
+            {/* Primary & Secondary CTAs */}
+            <div className="mt-7 flex flex-wrap gap-3">
+              <Button
+                asChild
+                size="lg"
+                className="bg-(--jp-sun) font-semibold text-(--jp-ink) shadow-[0_14px_30px_-10px_rgba(240,208,120,0.45)] transition-transform hover:-translate-y-0.5 hover:bg-[#e8c56a]"
+              >
+                <Link to="/demo" search={{ tab: "comparison" }}>
+                  Coba demo gratis <ArrowRight className="ml-1.5 h-4 w-4" />
+                </Link>
+              </Button>
+              <Button
+                asChild
+                size="lg"
+                variant="outline"
+                className="border-white/30 bg-white/5 text-white backdrop-blur-sm hover:bg-white/15 hover:text-white"
+              >
+                <Link to="/signup">Buat akun</Link>
+              </Button>
+            </div>
+
+            {/* Floating Glassmorphic KPI Pills synchronized with 3D scene */}
+            <div className="mt-8 grid grid-cols-3 gap-2.5 sm:max-w-lg">
+              <div className="jp-glass-pill rounded-2xl p-3">
+                <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-200/80">
+                  <Activity className="h-3.5 w-3.5 text-emerald-400" />
+                  <span>Risiko Kelas A</span>
                 </div>
-              ))}
+                <p className="mt-1 text-base font-bold text-white sm:text-lg">
+                  {spoilageAware ? "-38% Susut" : "+28% Susut"}
+                </p>
+              </div>
+              <div className="jp-glass-pill rounded-2xl p-3">
+                <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-200/80">
+                  <Clock className="h-3.5 w-3.5 text-(--jp-sun)" />
+                  <span>Sisa Simpan</span>
+                </div>
+                <p className="mt-1 text-base font-bold text-white sm:text-lg">
+                  {spoilageAware ? "+14.0 Jam" : "Kritis 3.5j"}
+                </p>
+              </div>
+              <div className="jp-glass-pill rounded-2xl p-3">
+                <div className="flex items-center gap-1.5 text-[11px] font-medium text-emerald-200/80">
+                  <Truck className="h-3.5 w-3.5 text-emerald-300" />
+                  <span>Armada Aktif</span>
+                </div>
+                <p className="mt-1 text-base font-bold text-white sm:text-lg">Cold-Box #02</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column: Interactive 3D Map Route Stage with Lazy Hydration */}
+          <div className="relative z-10 h-[400px] w-full sm:h-[470px] lg:col-span-6">
+            {shouldRender3D ? (
+              <Suspense fallback={<Hero3DFallbackPlaceholder spoilageAware={spoilageAware} />}>
+                <LazyHero3DRouteScene
+                  spoilageAware={spoilageAware}
+                  onSelectMode={setSpoilageAware}
+                />
+              </Suspense>
+            ) : (
+              <Hero3DFallbackPlaceholder spoilageAware={spoilageAware} />
+            )}
+          </div>
+        </div>
+
+        {/* Soft bottom gradient bridge into the overlapping below-the-fold card */}
+        <div
+          className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-b from-transparent via-[#07150f]/50 to-(--jp-paper)"
+          aria-hidden
+        />
+      </section>
+
+      {/* Overlapping Floating 3D-Depth Planner Preview Section */}
+      <section className="relative z-20 -mt-12 border-b border-(--jp-line) px-4 pb-16 sm:-mt-16 sm:px-6 sm:pb-20">
+        <div className="mx-auto max-w-6xl">
+          <div className="jp-depth-card overflow-hidden rounded-3xl border border-emerald-950/12 bg-white/95 shadow-[0_28px_70px_-24px_rgba(15,42,28,0.38)] backdrop-blur-xl">
+            {/* Dark Emerald Telemetry Header */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-emerald-900/20 bg-gradient-to-r from-[#0b2419] via-[#123827] to-[#0b2419] px-5 py-3.5 text-xs text-emerald-100">
+              <div className="flex items-center gap-2.5">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#34d399]" />
+                <span className="font-semibold tracking-wide text-white">
+                  /demo · Guest Demo — Preview Planner Interaktif
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-[11px] text-emerald-200/80">
+                <Compass className="h-3.5 w-3.5 text-(--jp-sun)" />
+                <span>Sinkron dengan simulasi 3D di atas</span>
+              </div>
+            </div>
+
+            <div className="p-6 sm:p-8">
+              <div className="flex flex-col justify-between gap-4 border-b border-(--jp-line) pb-6 md:flex-row md:items-end">
+                <div>
+                  <h2
+                    className="text-3xl font-semibold tracking-tight text-(--jp-ink) sm:text-4xl"
+                    style={display}
+                  >
+                    Preview planner
+                  </h2>
+                  <p className="mt-1.5 max-w-2xl text-sm text-(--jp-muted) sm:text-base">
+                    Alur yang sama dengan demo: panen, skor risiko, kelayakan armada, optimasi.
+                  </p>
+                </div>
+                <Link
+                  to="/demo"
+                  search={{ tab: "comparison" }}
+                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-(--jp-leaf) hover:text-(--jp-leaf-deep)"
+                >
+                  Buka workspace simulasi penuh <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+
+              <div className="mt-6 grid gap-4 md:grid-cols-3">
+                {PREVIEW_STEPS.map((item, i) => (
+                  <div
+                    key={item.title}
+                    className="jp-floating-tile group relative rounded-2xl border border-(--jp-line) bg-gradient-to-b from-white to-[#f4f8f5] p-5 transition-all duration-300 hover:-translate-y-1 hover:border-(--jp-leaf)/40 hover:shadow-[0_18px_38px_-18px_rgba(20,82,52,0.22)]"
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="inline-flex items-center rounded-full bg-emerald-950/8 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-(--jp-leaf)">
+                        Langkah {i + 1}
+                      </span>
+                      <span className="text-[11px] font-medium text-(--jp-muted)">
+                        {item.metric}
+                      </span>
+                    </div>
+                    <p className="mt-3 text-base font-semibold text-(--jp-ink)">{item.title}</p>
+                    <p className="mt-1.5 text-xs leading-relaxed text-(--jp-muted)">
+                      {item.detail}
+                    </p>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </section>
 
-      <section className="border-b border-(--jp-line) bg-[#eef4ef] px-4 py-16 sm:px-6 sm:py-20">
+      {/* Masalah di Lapangan — Elevated 3D Depth Cards */}
+      <section className="relative overflow-hidden border-b border-(--jp-line) bg-[#eef4ef] px-4 py-16 sm:px-6 sm:py-20">
+        <div
+          className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-emerald-600/8 blur-3xl"
+          aria-hidden
+        />
         <div className="mx-auto max-w-6xl">
-          <h2 className="text-3xl font-semibold sm:text-4xl" style={display}>
+          <div className="inline-flex items-center gap-2 rounded-full bg-emerald-950/8 px-3 py-1 text-xs font-semibold text-(--jp-leaf-deep)">
+            <Layers className="h-3.5 w-3.5" />
+            <span>Mengapa Rute Standar Gagal</span>
+          </div>
+          <h2 className="mt-3 text-3xl font-semibold sm:text-4xl" style={display}>
             Masalah di lapangan
           </h2>
           <p className="mt-2 max-w-2xl text-(--jp-muted)">
             Rute terpendek sering mengorbankan kelas A/B — kerugian diam-diam di bak truk.
           </p>
-          <ul className="mt-8 grid gap-4 sm:grid-cols-3">
-            <li className="rounded-xl bg-white/80 p-5 ring-1 ring-(--jp-line)">
-              <Leaf className="h-5 w-5 text-(--jp-leaf)" />
-              <p className="mt-3 font-semibold">Panen rentan</p>
-              <p className="mt-1 text-sm text-(--jp-muted)">
+          <ul className="mt-8 grid gap-5 sm:grid-cols-3">
+            <li className="jp-floating-tile rounded-2xl border border-white/80 bg-white/90 p-6 shadow-[0_18px_40px_-24px_rgba(15,42,28,0.22)] ring-1 ring-(--jp-line) backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1">
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-950/10 text-(--jp-leaf)">
+                <Leaf className="h-5 w-5" />
+              </div>
+              <p className="mt-4 text-lg font-semibold">Panen rentan</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-(--jp-muted)">
                 Tomat dan daun hijau kehabisan jendela kualitas sebelum sampai pasar.
               </p>
             </li>
-            <li className="rounded-xl bg-white/80 p-5 ring-1 ring-(--jp-line)">
-              <Route className="h-5 w-5 text-(--jp-leaf)" />
-              <p className="mt-3 font-semibold">Rute bukan selalu terbaik</p>
-              <p className="mt-1 text-sm text-(--jp-muted)">
+            <li className="jp-floating-tile rounded-2xl border border-white/80 bg-white/90 p-6 shadow-[0_18px_40px_-24px_rgba(15,42,28,0.22)] ring-1 ring-(--jp-line) backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1">
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-950/10 text-(--jp-leaf)">
+                <Route className="h-5 w-5" />
+              </div>
+              <p className="mt-4 text-lg font-semibold">Rute bukan selalu terbaik</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-(--jp-muted)">
                 Dispatcher mengutamakan km, bukan sisa shelf life.
               </p>
             </li>
-            <li className="rounded-xl bg-white/80 p-5 ring-1 ring-(--jp-line)">
-              <Shield className="h-5 w-5 text-(--jp-leaf)" />
-              <p className="mt-3 font-semibold">Sulit dibuktikan</p>
-              <p className="mt-1 text-sm text-(--jp-muted)">
+            <li className="jp-floating-tile rounded-2xl border border-white/80 bg-white/90 p-6 shadow-[0_18px_40px_-24px_rgba(15,42,28,0.22)] ring-1 ring-(--jp-line) backdrop-blur-sm transition-transform duration-300 hover:-translate-y-1">
+              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-950/10 text-(--jp-leaf)">
+                <Shield className="h-5 w-5" />
+              </div>
+              <p className="mt-4 text-lg font-semibold">Sulit dibuktikan</p>
+              <p className="mt-1.5 text-sm leading-relaxed text-(--jp-muted)">
                 Tanpa komparasi baseline vs spoilage-aware, keputusan sulit dipertanggungjawabkan.
               </p>
             </li>
@@ -209,86 +484,157 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Cara Kerja — Connected 3D-Styled Step Pipeline */}
       <section className="border-b border-(--jp-line) bg-(--jp-paper) px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-6xl">
           <h2 className="text-3xl font-semibold sm:text-4xl" style={display}>
             Cara kerja
           </h2>
-          <ol className="mt-8 grid gap-6 sm:grid-cols-4">
-            {HOW_STEPS.map((label, i) => (
-              <li key={label}>
-                <span className="text-4xl font-semibold text-(--jp-leaf)/30" style={display}>
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <p className="mt-2 text-sm font-medium">{label}</p>
+          <p className="mt-2 max-w-2xl text-(--jp-muted)">
+            Empat langkah terstruktur dari pencatatan panen hingga eksekusi rute pengantar.
+          </p>
+          <ol className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            {HOW_STEPS.map((step, i) => (
+              <li
+                key={step.title}
+                className="relative rounded-2xl border border-(--jp-line) bg-white p-5 shadow-[0_12px_30px_-20px_rgba(15,42,28,0.18)] transition-all duration-300 hover:-translate-y-1 hover:border-(--jp-leaf)/40"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-4xl font-semibold text-(--jp-leaf)/35" style={display}>
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="h-2 w-2 rounded-full bg-(--jp-leaf)/40" />
+                </div>
+                <p className="mt-3 text-base font-semibold text-(--jp-ink)">{step.title}</p>
+                <p className="mt-1.5 text-xs leading-relaxed text-(--jp-muted)">{step.desc}</p>
               </li>
             ))}
           </ol>
         </div>
       </section>
 
-      <section className="border-b border-(--jp-line) bg-[#0f2a1c] px-4 py-16 text-emerald-50 sm:px-6 sm:py-20">
+      {/* Teaser Rute — Cohesive Dark 3D Telemetry Comparison */}
+      <section className="relative overflow-hidden border-b border-(--jp-line) bg-[radial-gradient(ellipse_at_75%_25%,#184832_0%,#0f2a1c_55%,#07150f_100%)] px-4 py-16 text-emerald-50 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-6xl">
-          <h2 className="text-3xl font-semibold sm:text-4xl" style={display}>
-            Teaser rute
-          </h2>
-          <p className="mt-2 max-w-xl text-emerald-100/70">
-            Alihkan antara baseline jarak-pendek dan spoilage-aware sebelum membuka demo penuh.
-          </p>
-          <div className="mt-8 flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setSpoilageAware(false)}
-              className={
-                !spoilageAware
-                  ? "rounded-lg bg-white px-4 py-2 text-sm font-medium text-(--jp-ink)"
-                  : "rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-emerald-100"
-              }
-            >
-              Baseline (km)
-            </button>
-            <button
-              type="button"
-              onClick={() => setSpoilageAware(true)}
-              className={
-                spoilageAware
-                  ? "rounded-lg bg-(--jp-sun) px-4 py-2 text-sm font-medium text-(--jp-ink)"
-                  : "rounded-lg bg-white/10 px-4 py-2 text-sm font-medium text-emerald-100"
-              }
-            >
-              Spoilage-aware
-            </button>
+          <div className="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
+            <div>
+              <h2 className="text-3xl font-semibold sm:text-4xl" style={display}>
+                Teaser rute
+              </h2>
+              <p className="mt-2 max-w-xl text-emerald-100/75">
+                Alihkan antara baseline jarak-pendek dan spoilage-aware sebelum membuka demo penuh.
+                Pilihan Anda juga mengubah simulasi 3D di atas.
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setSpoilageAware(false)}
+                className={
+                  !spoilageAware
+                    ? "rounded-xl bg-white px-4 py-2.5 text-sm font-semibold text-(--jp-ink) shadow-md"
+                    : "rounded-xl border border-white/15 bg-white/8 px-4 py-2.5 text-sm font-medium text-emerald-100 hover:bg-white/15"
+                }
+              >
+                Baseline (km)
+              </button>
+              <button
+                type="button"
+                onClick={() => setSpoilageAware(true)}
+                className={
+                  spoilageAware
+                    ? "rounded-xl bg-(--jp-sun) px-4 py-2.5 text-sm font-semibold text-(--jp-ink) shadow-md"
+                    : "rounded-xl border border-white/15 bg-white/8 px-4 py-2.5 text-sm font-medium text-emerald-100 hover:bg-white/15"
+                }
+              >
+                Spoilage-aware
+              </button>
+            </div>
           </div>
-          <div className="mt-6 h-40 overflow-hidden rounded-xl bg-[#07150f] ring-1 ring-white/10">
-            <svg viewBox="0 0 400 160" className="h-full w-full" aria-hidden>
-              <circle cx="40" cy="80" r="8" fill="#6ee7b7" />
-              <circle cx="360" cy="80" r="8" fill="#fbbf24" />
-              {spoilageAware ? (
-                <path
-                  d="M48 80 C 120 20, 200 140, 280 50 S 340 90, 352 80"
-                  fill="none"
-                  stroke="#34d399"
-                  strokeWidth="4"
+
+          <div className="mt-8 grid gap-6 lg:grid-cols-12">
+            <div className="overflow-hidden rounded-2xl border border-white/12 bg-[#07150f]/90 p-4 shadow-2xl backdrop-blur-md lg:col-span-8">
+              <svg viewBox="0 0 460 180" className="h-44 w-full" aria-hidden>
+                <defs>
+                  <linearGradient id="spoilageStroke" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#34d399" />
+                    <stop offset="55%" stopColor="#f0d078" />
+                    <stop offset="100%" stopColor="#34d399" />
+                  </linearGradient>
+                </defs>
+                {/* Subtle perspective horizon lines */}
+                <line
+                  x1="20"
+                  y1="90"
+                  x2="440"
+                  y2="90"
+                  stroke="rgba(255,255,255,0.06)"
+                  strokeWidth="1"
                 />
-              ) : (
-                <path
-                  d="M48 80 L 352 80"
-                  fill="none"
-                  stroke="#94a3b8"
-                  strokeWidth="4"
-                  strokeDasharray="8 6"
-                />
-              )}
-              <text x="200" y="140" textAnchor="middle" fill="#a7f3d0" fontSize="12">
-                {spoilageAware
-                  ? "Detour kecil · risiko spoilage turun"
-                  : "Lurus · kelas A menunggu lebih lama"}
-              </text>
-            </svg>
+                <circle cx="50" cy="90" r="9" fill="#6ee7b7" />
+                <circle cx="230" cy="48" r="7" fill="#f0d078" />
+                <circle cx="410" cy="90" r="9" fill="#fbbf24" />
+                {spoilageAware ? (
+                  <path
+                    d="M58 90 C 130 24, 185 45, 230 48 S 345 105, 402 90"
+                    fill="none"
+                    stroke="url(#spoilageStroke)"
+                    strokeWidth="4.5"
+                    strokeLinecap="round"
+                  />
+                ) : (
+                  <path
+                    d="M58 90 L 402 90"
+                    fill="none"
+                    stroke="#fb923c"
+                    strokeWidth="4"
+                    strokeDasharray="8 6"
+                  />
+                )}
+                <text
+                  x="230"
+                  y="152"
+                  textAnchor="middle"
+                  fill="#a7f3d0"
+                  fontSize="12"
+                  fontWeight="600"
+                >
+                  {spoilageAware
+                    ? "Detour kecil · risiko spoilage turun · lot Kelas A diselamatkan lebih dulu"
+                    : "Lurus · kelas A menunggu lebih lama · susut mutu meningkat di bak truk"}
+                </text>
+              </svg>
+            </div>
+
+            <div className="flex flex-col justify-between rounded-2xl border border-white/12 bg-white/6 p-5 backdrop-blur-md lg:col-span-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-emerald-300">
+                  Ringkasan Dampak Rute
+                </p>
+                <p className="mt-2 text-2xl font-semibold text-white" style={display}>
+                  {spoilageAware ? "Prioritas Ketahanan Mutu" : "Prioritas Jarak Minimum"}
+                </p>
+                <p className="mt-2 text-xs leading-relaxed text-emerald-100/75">
+                  {spoilageAware
+                    ? "Mengalihkan truk +6 km melalui Hub Cold-Box Pujon menjaga suhu tomat Kelas A tetap di bawah ambang susut."
+                    : "Memotong jalur langsung memangkas 6 km jarak tempuh tetapi membuat panen Kelas A terpapar panas lebih lama."}
+                </p>
+              </div>
+              <div className="mt-5 border-t border-white/10 pt-4">
+                <Link
+                  to="/demo"
+                  search={{ tab: "comparison" }}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-(--jp-sun) hover:underline"
+                >
+                  Uji dengan data panen Anda di Demo <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
+      {/* Bukti Arah Produk */}
       <section className="border-b border-(--jp-line) bg-(--jp-paper) px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-6xl">
           <h2 className="text-3xl font-semibold sm:text-4xl" style={display}>
@@ -298,25 +644,30 @@ export function LandingPage() {
             Dibangun di atas stack SOW yang sudah live: risk score, feasibility preview, dan
             komparasi baseline vs spoilage-aware.
           </p>
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-xl border border-(--jp-line) bg-white p-5">
-              <p className="font-semibold text-(--jp-leaf-deep)">Rule-based</p>
-              <p className="mt-1 text-sm text-(--jp-muted)">Tanpa ketergantungan ML untuk MVP</p>
+          <div className="mt-8 grid gap-5 sm:grid-cols-3">
+            <div className="rounded-2xl border border-(--jp-line) bg-white p-6 shadow-[0_14px_32px_-22px_rgba(15,42,28,0.2)]">
+              <p className="text-lg font-semibold text-(--jp-leaf-deep)">Rule-based</p>
+              <p className="mt-1.5 text-sm text-(--jp-muted)">
+                Tanpa ketergantungan ML untuk MVP — transparan dan mudah diaudit pengelola.
+              </p>
             </div>
-            <div className="rounded-xl border border-(--jp-line) bg-white p-5">
-              <p className="font-semibold text-(--jp-leaf-deep)">Multi-tenant ready</p>
-              <p className="mt-1 text-sm text-(--jp-muted)">Org JWT + guest sandbox terpisah</p>
+            <div className="rounded-2xl border border-(--jp-line) bg-white p-6 shadow-[0_14px_32px_-22px_rgba(15,42,28,0.2)]">
+              <p className="text-lg font-semibold text-(--jp-leaf-deep)">Multi-tenant ready</p>
+              <p className="mt-1.5 text-sm text-(--jp-muted)">
+                Org JWT + guest sandbox terpisah untuk simulasi aman tanpa mencampur data.
+              </p>
             </div>
-            <div className="rounded-xl border border-(--jp-line) bg-white p-5">
-              <p className="font-semibold text-(--jp-leaf-deep)">Operator-first</p>
-              <p className="mt-1 text-sm text-(--jp-muted)">
-                Input panen dan armada yang sudah ada
+            <div className="rounded-2xl border border-(--jp-line) bg-white p-6 shadow-[0_14px_32px_-22px_rgba(15,42,28,0.2)]">
+              <p className="text-lg font-semibold text-(--jp-leaf-deep)">Operator-first</p>
+              <p className="mt-1.5 text-sm text-(--jp-muted)">
+                Input panen dan armada yang sudah ada tanpa instalasi perangkat keras baru.
               </p>
             </div>
           </div>
         </div>
       </section>
 
+      {/* Pricing Section */}
       <section
         id="pricing"
         className="border-b border-(--jp-line) bg-[#eef4ef] px-4 py-16 sm:px-6 sm:py-20"
@@ -328,30 +679,45 @@ export function LandingPage() {
           <p className="mt-2 text-(--jp-muted)">
             Guest demo, lalu Basic atau Pro untuk organisasi.
           </p>
-          <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {PRICING.map((plan) => (
               <div
                 key={plan.name}
                 className={
                   plan.highlight
-                    ? "flex flex-col rounded-xl border border-(--jp-leaf) bg-white p-4 shadow-md ring-1 ring-(--jp-leaf)/30"
-                    : "flex flex-col rounded-xl border border-(--jp-line) bg-white/90 p-4"
+                    ? "flex flex-col rounded-2xl border border-(--jp-leaf) bg-white p-6 shadow-[0_22px_48px_-24px_rgba(31,107,69,0.35)] ring-2 ring-(--jp-leaf)/25"
+                    : "flex flex-col rounded-2xl border border-(--jp-line) bg-white/95 p-6 shadow-sm"
                 }
               >
-                <p className="text-xs font-semibold uppercase tracking-wide text-(--jp-leaf)">
-                  {plan.name}
-                </p>
-                <p className="mt-2 text-xl font-semibold" style={display}>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-(--jp-leaf)">
+                    {plan.name}
+                  </p>
+                  {plan.highlight && (
+                    <span className="rounded-full bg-emerald-950/10 px-2.5 py-0.5 text-[10px] font-semibold text-(--jp-leaf-deep)">
+                      Rekomendasi Koperasi
+                    </span>
+                  )}
+                </div>
+                <p className="mt-3 text-2xl font-semibold" style={display}>
                   {plan.price}
                 </p>
-                <p className="mt-2 flex-1 text-xs text-(--jp-muted)">{plan.blurb}</p>
+                <p className="mt-2 text-xs leading-relaxed text-(--jp-muted)">{plan.blurb}</p>
+                <ul className="mt-4 flex-1 space-y-2 border-t border-(--jp-line) pt-4 text-xs text-(--jp-ink)">
+                  {plan.features.map((feat) => (
+                    <li key={feat} className="flex items-center gap-2">
+                      <Check className="h-3.5 w-3.5 shrink-0 text-(--jp-leaf)" />
+                      <span>{feat}</span>
+                    </li>
+                  ))}
+                </ul>
                 <Button
                   asChild
                   size="sm"
                   className={
                     plan.highlight
-                      ? "mt-4 w-full bg-(--jp-leaf) hover:bg-(--jp-leaf-deep)"
-                      : "mt-4 w-full bg-(--jp-ink) hover:bg-black"
+                      ? "mt-6 w-full bg-(--jp-leaf) hover:bg-(--jp-leaf-deep)"
+                      : "mt-6 w-full bg-(--jp-ink) hover:bg-black"
                   }
                 >
                   {plan.demo ? (
@@ -370,6 +736,7 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* FAQ Section */}
       <section className="border-b border-(--jp-line) bg-(--jp-paper) px-4 py-16 sm:px-6 sm:py-20">
         <div className="mx-auto max-w-3xl">
           <h2 className="text-3xl font-semibold sm:text-4xl" style={display}>
@@ -389,7 +756,8 @@ export function LandingPage() {
         </div>
       </section>
 
-      <section className="bg-[#0f2a1c] px-4 py-20 text-center text-white sm:px-6 sm:py-24">
+      {/* Final CTA Section */}
+      <section className="relative overflow-hidden bg-[radial-gradient(ellipse_at_50%_0%,#1a4d36_0%,#0f2a1c_60%,#07150f_100%)] px-4 py-20 text-center text-white sm:px-6 sm:py-24">
         <div className="mx-auto max-w-2xl">
           <h2 className="text-3xl font-semibold sm:text-5xl" style={display}>
             Siap jaga panen hari ini?
@@ -398,7 +766,11 @@ export function LandingPage() {
             Mulai dari demo gratis — tanpa kartu kredit, tanpa dataset nasional.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-3">
-            <Button asChild size="lg" className="bg-(--jp-sun) text-(--jp-ink) hover:bg-[#e8c56a]">
+            <Button
+              asChild
+              size="lg"
+              className="bg-(--jp-sun) font-semibold text-(--jp-ink) shadow-lg hover:bg-[#e8c56a]"
+            >
               <Link to="/demo" search={{ tab: "comparison" }}>
                 Coba demo gratis
               </Link>

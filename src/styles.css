@@ -172,6 +172,40 @@
   font-family: var(--jp-sans);
 }
 
+.jp-hero-grid-overlay {
+  background-image:
+    linear-gradient(to right, rgba(110, 231, 183, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(110, 231, 183, 0.06) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at 55% 45%, black 30%, transparent 78%);
+}
+
+.jp-glass-pill {
+  background: linear-gradient(145deg, rgba(16, 56, 38, 0.72) 0%, rgba(7, 21, 15, 0.78) 100%);
+  border: 1px solid rgba(167, 243, 208, 0.16);
+  box-shadow:
+    0 14px 32px -16px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+}
+
+.jp-depth-card {
+  box-shadow:
+    0 32px 72px -28px rgba(15, 42, 28, 0.42),
+    0 0 0 1px rgba(31, 107, 69, 0.08);
+}
+
+.jp-floating-tile {
+  will-change: transform, box-shadow;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .jp-floating-tile {
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
 @keyframes jp-draw {
   from {
     stroke-dasharray: 600;
