@@ -183,7 +183,7 @@ function Hero3DFallbackPlaceholder({ spoilageAware }: { spoilageAware: boolean }
       </svg>
 
       <div className="rounded-2xl border border-white/10 bg-[#0b2319]/85 p-3 text-xs text-emerald-100/80">
-        Memuat simulasi rute 3D hemat memori · Prioritas kesegaran Kelas A aktif.
+        Menyiapkan peta rute interaktif · Prioritas kesegaran Kelas A.
       </div>
     </div>
   );
@@ -192,20 +192,28 @@ function Hero3DFallbackPlaceholder({ spoilageAware }: { spoilageAware: boolean }
 export function LandingPage() {
   const [spoilageAware, setSpoilageAware] = useState(true);
   const [shouldRender3D, setShouldRender3D] = useState(false);
+  const [reduceMotion, setReduceMotion] = useState(false);
 
-  // Non-blocking hydration: wait until browser main thread is idle after initial paint,
-  // and respect data-saver / reduced-motion preferences on low-end devices.
+  // Defer canvas mount until after first paint. Prefer reduced-motion softens
+  // auto-orbit inside the scene — it must not permanently block the interactive map
+  // (Windows often enables prefers-reduced-motion while mobile does not).
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const prefersReducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    const motionQuery = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    setReduceMotion(Boolean(motionQuery?.matches));
+
+    const onMotionChange = (event: MediaQueryListEvent) => {
+      setReduceMotion(event.matches);
+    };
+    motionQuery?.addEventListener?.("change", onMotionChange);
+
     const nav = navigator as Navigator & {
       connection?: { saveData?: boolean };
     };
-    const saveData = Boolean(nav.connection?.saveData);
-
-    if (prefersReducedMotion || saveData) {
-      return;
+    // Data-saver: keep the light SVG placeholder to avoid extra JS/canvas work.
+    if (nav.connection?.saveData) {
+      return () => motionQuery?.removeEventListener?.("change", onMotionChange);
     }
 
     let timeoutId: ReturnType<typeof setTimeout> | null = null;
@@ -215,14 +223,18 @@ export function LandingPage() {
     };
 
     if (typeof win.requestIdleCallback === "function") {
-      const idleId = win.requestIdleCallback(() => setShouldRender3D(true), { timeout: 600 });
-      return () => win.cancelIdleCallback?.(idleId);
-    } else {
-      timeoutId = setTimeout(() => setShouldRender3D(true), 120);
+      const idleId = win.requestIdleCallback(() => setShouldRender3D(true), { timeout: 400 });
       return () => {
-        if (timeoutId) clearTimeout(timeoutId);
+        win.cancelIdleCallback?.(idleId);
+        motionQuery?.removeEventListener?.("change", onMotionChange);
       };
     }
+
+    timeoutId = setTimeout(() => setShouldRender3D(true), 80);
+    return () => {
+      if (timeoutId) clearTimeout(timeoutId);
+      motionQuery?.removeEventListener?.("change", onMotionChange);
+    };
   }, []);
 
   return (
@@ -353,6 +365,7 @@ export function LandingPage() {
                 <LazyHero3DRouteScene
                   spoilageAware={spoilageAware}
                   onSelectMode={setSpoilageAware}
+                  reduceMotion={reduceMotion}
                 />
               </Suspense>
             ) : (

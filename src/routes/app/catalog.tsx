@@ -155,8 +155,6 @@ function CatalogPage() {
           disabled={busy}
           className="mt-3 h-9 bg-emerald-700 text-xs hover:bg-emerald-800"
         >
-          {" "}
-          ( ) ( )
           {busy ? (
             <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" />
           ) : (

@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from "react";
 export interface Hero3DRouteSceneProps {
   spoilageAware: boolean;
   onSelectMode?: (spoilageAware: boolean) => void;
+  /** Soften auto camera / pulse motion; pointer orbit still works. */
+  reduceMotion?: boolean;
   /**
    * Optional public Spline `.splinecode` URL.
    * When provided, loads the external WebGL Spline runtime iframe/canvas;
@@ -129,6 +131,7 @@ function sampleCubicBezier3D(
 export default function Hero3DRouteScene({
   spoilageAware,
   onSelectMode,
+  reduceMotion = false,
   splineSceneUrl,
 }: Hero3DRouteSceneProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -194,8 +197,14 @@ export default function Hero3DRouteScene({
       pointerRef.current.currentY +=
         (pointerRef.current.targetY - pointerRef.current.currentY) * 0.06;
 
-      const yaw = 0.58 + Math.sin(elapsed * 0.35) * 0.06 + pointerRef.current.currentX * 0.28;
-      const pitch = 0.52 + Math.cos(elapsed * 0.28) * 0.03 + pointerRef.current.currentY * 0.16;
+      const yaw =
+        0.58 +
+        (reduceMotion ? 0 : Math.sin(elapsed * 0.35) * 0.06) +
+        pointerRef.current.currentX * 0.28;
+      const pitch =
+        0.52 +
+        (reduceMotion ? 0 : Math.cos(elapsed * 0.28) * 0.03) +
+        pointerRef.current.currentY * 0.16;
 
       ctx.clearRect(0, 0, width, height);
 
@@ -229,8 +238,9 @@ export default function Hero3DRouteScene({
           const nx = (c / (gridCols - 1) - 0.5) * 3.8;
           // Highland elevation on top-left (Batu/Pujon) sloping down toward Surabaya
           const highlandPeak = Math.exp(-((nx + 1.25) ** 2 + (nz + 0.75) ** 2) * 0.85) * 0.42;
-          const ridgeWave =
-            Math.sin(nx * 1.9 + elapsed * 0.7) * Math.cos(nz * 1.7 + elapsed * 0.5) * 0.055;
+          const ridgeWave = reduceMotion
+            ? 0
+            : Math.sin(nx * 1.9 + elapsed * 0.7) * Math.cos(nz * 1.7 + elapsed * 0.5) * 0.055;
           const elev = highlandPeak + ridgeWave - 0.16;
 
           const proj = project3D(nx, elev, nz, width, height, yaw, pitch);
@@ -398,8 +408,9 @@ export default function Hero3DRouteScene({
 
         // Animated 3D Harvest Telemetry Trucks (2 staggered pulses along the spoilage-aware arc)
         if (activePts.length > 2) {
-          [0, 0.48].forEach((offset, pulseIdx) => {
-            const progress = (elapsed * 0.26 + offset) % 1;
+          const pulseOffsets = reduceMotion ? [0.35] : [0, 0.48];
+          pulseOffsets.forEach((offset, pulseIdx) => {
+            const progress = reduceMotion ? offset : (elapsed * 0.26 + offset) % 1;
             const floatIdx = progress * (activePts.length - 1);
             const idx = Math.floor(floatIdx);
             const nextIdx = Math.min(activePts.length - 1, idx + 1);
@@ -433,7 +444,7 @@ export default function Hero3DRouteScene({
         );
 
         if (baselinePts.length > 2) {
-          const progress = (elapsed * 0.19) % 1;
+          const progress = reduceMotion ? 0.45 : (elapsed * 0.19) % 1;
           const idx = Math.floor(progress * (baselinePts.length - 1));
           const pt = baselinePts[idx];
           if (pt) {
@@ -476,7 +487,8 @@ export default function Hero3DRouteScene({
         ctx.fill();
 
         const isHovered = hoveredNode === node.id;
-        const pulseRadius = (isHovered ? 16 : 12) + Math.sin(elapsed * 3 + node.x) * 2.2;
+        const pulseRadius =
+          (isHovered ? 16 : 12) + (reduceMotion ? 0 : Math.sin(elapsed * 3 + node.x) * 2.2);
 
         ctx.beginPath();
         ctx.arc(top.sx, top.sy, pulseRadius, 0, Math.PI * 2);
@@ -531,7 +543,7 @@ export default function Hero3DRouteScene({
       window.cancelAnimationFrame(animationFrameId);
       window.removeEventListener("resize", updateSize);
     };
-  }, [spoilageAware, hoveredNode, isVisible, splineSceneUrl]);
+  }, [spoilageAware, hoveredNode, isVisible, splineSceneUrl, reduceMotion]);
 
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();

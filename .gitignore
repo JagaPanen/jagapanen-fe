@@ -50,3 +50,9 @@ Thumbs.db
 *.njsproj
 *.sln
 *.sw?
+
+# remotion video output
+panenlink-video/
+
+# base design files
+DESIGN.md
